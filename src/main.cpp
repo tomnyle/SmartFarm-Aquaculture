@@ -7,6 +7,7 @@
 #include <Wire.h>
 #include <BH1750.h>
 #include "app_config.h"
+#include "pins.h"
 
 // ==================== GLOBAL OBJECTS ====================
 WiFiClient espClient;
@@ -45,7 +46,7 @@ uint32_t last_sensor_read = 0;
 uint32_t last_mqtt_publish = 0;
 uint32_t last_rule_engine = 0;
 
-char current_mode[16] = DEFAULT_MODE;
+char current_mode[16] = "";
 char current_species[32] = "Tilapia";
 
 // ==================== FORWARD DECLARATIONS ====================
@@ -67,6 +68,9 @@ void setup() {
   Serial.println("\n\n===== SmartFarm Aquaculture Controller V" FW_VERSION " =====");
   Serial.println("Starting initialization...");
   
+  // Set default mode
+  strcpy(current_mode, DEFAULT_MODE);
+  
   // Initialize pins
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, LOW);
@@ -82,7 +86,7 @@ void setup() {
   if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
     Serial.println("[OK] BH1750 Light Sensor initialized");
   } else {
-    Serial.println("[ERROR] BH1750 Light Sensor failed");
+    Serial.println("[WARN] BH1750 Light Sensor not found (optional)");
   }
   
   // Initialize WiFi
@@ -91,6 +95,7 @@ void setup() {
   // Initialize MQTT
   mqtt_client.setServer(MQTT_BROKER, MQTT_PORT);
   mqtt_client.setCallback(mqtt_callback);
+  mqtt_client.setBufferSize(512);
   
   Serial.println("===== Initialization Complete =====\n");
 }
@@ -124,8 +129,11 @@ void loop() {
   
   // Publish MQTT
   if (now - last_mqtt_publish >= MQTT_PUBLISH_INTERVAL) {
-    publish_sensor_data();
-    publish_output_state();
+    if (mqtt_client.connected()) {
+      publish_sensor_data();
+      publish_output_state();
+      Serial.println("[MQTT] Data published successfully");
+    }
     last_mqtt_publish = now;
   }
   
@@ -145,9 +153,11 @@ void setup_wifi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
   uint32_t start = millis();
+  int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT) {
     delay(500);
     Serial.print(".");
+    attempts++;
   }
   
   if (WiFi.status() == WL_CONNECTED) {
@@ -156,7 +166,7 @@ void setup_wifi() {
     Serial.println(WiFi.localIP());
   } else {
     Serial.println();
-    Serial.println("[ERROR] WiFi connection failed!");
+    Serial.println("[WARN] WiFi connection timeout, retrying...");
   }
 }
 
@@ -166,6 +176,15 @@ void reconnect_mqtt() {
     return;
   }
   
+  static uint32_t last_reconnect_attempt = 0;
+  uint32_t now = millis();
+  
+  // Only attempt reconnect every 5 seconds
+  if (now - last_reconnect_attempt < MQTT_RECONNECT_INTERVAL) {
+    return;
+  }
+  last_reconnect_attempt = now;
+  
   Serial.print("[MQTT] Connecting to: ");
   Serial.println(MQTT_BROKER);
   
@@ -173,7 +192,7 @@ void reconnect_mqtt() {
     Serial.println("[OK] MQTT Connected!");
     
     // Publish online status
-    mqtt_client.publish(MQTT_TOPIC_STATUS, "online");
+    mqtt_client.publish("homeassistant/switch/aquaculture_status/state", "online");
     
     // Subscribe to control topics
     mqtt_client.subscribe(MQTT_TOPIC_CONTROL_PUMP);
@@ -184,7 +203,7 @@ void reconnect_mqtt() {
     publish_mqtt_discovery();
     
   } else {
-    Serial.print("[ERROR] MQTT connection failed, rc=");
+    Serial.print("[WARN] MQTT connection failed, rc=");
     Serial.println(mqtt_client.state());
   }
 }
@@ -192,6 +211,8 @@ void reconnect_mqtt() {
 // ==================== HOME ASSISTANT MQTT DISCOVERY ====================
 void publish_mqtt_discovery() {
   Serial.println("[HA Discovery] Publishing entity discoveries...");
+  
+  delay(100); // Give broker time between publishes
   
   // Temperature Sensor
   {
@@ -210,6 +231,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/sensor/aquaculture_water_temp/config", payload.c_str(), true);
   }
   
+  delay(50);
+  
   // pH Sensor
   {
     StaticJsonDocument<512> doc;
@@ -226,6 +249,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/sensor/aquaculture_ph/config", payload.c_str(), true);
   }
   
+  delay(50);
+  
   // Dissolved Oxygen
   {
     StaticJsonDocument<512> doc;
@@ -241,6 +266,44 @@ void publish_mqtt_discovery() {
     serializeJson(doc, payload);
     mqtt_client.publish("homeassistant/sensor/aquaculture_do/config", payload.c_str(), true);
   }
+  
+  delay(50);
+  
+  // CO2 Sensor
+  {
+    StaticJsonDocument<512> doc;
+    doc["name"] = "Aquaculture CO2";
+    doc["unique_id"] = "aquaculture_co2";
+    doc["state_topic"] = MQTT_TOPIC_CO2;
+    doc["unit_of_measurement"] = "ppm";
+    doc["icon"] = "mdi:molecule-co2";
+    doc["device"]["identifiers"][0] = MQTT_CLIENT_ID;
+    doc["device"]["name"] = "Aquaculture Controller";
+    
+    String payload;
+    serializeJson(doc, payload);
+    mqtt_client.publish("homeassistant/sensor/aquaculture_co2/config", payload.c_str(), true);
+  }
+  
+  delay(50);
+  
+  // Turbidity Sensor
+  {
+    StaticJsonDocument<512> doc;
+    doc["name"] = "Aquaculture Turbidity";
+    doc["unique_id"] = "aquaculture_turbidity";
+    doc["state_topic"] = MQTT_TOPIC_TURBIDITY;
+    doc["unit_of_measurement"] = "NTU";
+    doc["icon"] = "mdi:water-opacity";
+    doc["device"]["identifiers"][0] = MQTT_CLIENT_ID;
+    doc["device"]["name"] = "Aquaculture Controller";
+    
+    String payload;
+    serializeJson(doc, payload);
+    mqtt_client.publish("homeassistant/sensor/aquaculture_turbidity/config", payload.c_str(), true);
+  }
+  
+  delay(50);
   
   // Air Temperature
   {
@@ -259,6 +322,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/sensor/aquaculture_air_temp/config", payload.c_str(), true);
   }
   
+  delay(50);
+  
   // Humidity
   {
     StaticJsonDocument<512> doc;
@@ -276,6 +341,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/sensor/aquaculture_humidity/config", payload.c_str(), true);
   }
   
+  delay(50);
+  
   // Light Level
   {
     StaticJsonDocument<512> doc;
@@ -291,6 +358,8 @@ void publish_mqtt_discovery() {
     serializeJson(doc, payload);
     mqtt_client.publish("homeassistant/sensor/aquaculture_light/config", payload.c_str(), true);
   }
+  
+  delay(50);
   
   // Pump Switch
   {
@@ -310,6 +379,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/switch/aquaculture_pump/config", payload.c_str(), true);
   }
   
+  delay(50);
+  
   // Mode Selector
   {
     StaticJsonDocument<512> doc;
@@ -327,6 +398,8 @@ void publish_mqtt_discovery() {
     serializeJson(doc, payload);
     mqtt_client.publish("homeassistant/select/aquaculture_mode/config", payload.c_str(), true);
   }
+  
+  delay(50);
   
   // Species Selector
   {
@@ -352,6 +425,8 @@ void publish_mqtt_discovery() {
     mqtt_client.publish("homeassistant/select/aquaculture_species/config", payload.c_str(), true);
   }
   
+  delay(100);
+  
   Serial.println("[OK] All discoveries published!");
 }
 
@@ -376,6 +451,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   // Control mode
   if (strcmp(topic, MQTT_TOPIC_CONTROL_MODE) == 0) {
     strcpy(current_mode, message.c_str());
+    Serial.print("[CONFIG] Mode changed to: ");
+    Serial.println(current_mode);
   }
   
   // Change species
@@ -424,12 +501,17 @@ void read_sensors() {
   Serial.print("CO2: ");
   Serial.print(sensors.co2);
   Serial.println(" ppm");
+  Serial.print("Turbidity: ");
+  Serial.println(sensors.turbidity);
   Serial.print("Air Temp: ");
   Serial.print(sensors.air_temp);
   Serial.println("°C");
   Serial.print("Humidity: ");
   Serial.print(sensors.air_humidity);
   Serial.println("%");
+  Serial.print("Light: ");
+  Serial.print(sensors.light);
+  Serial.println(" lux");
 }
 
 // ==================== APPLY RULES ====================
@@ -485,33 +567,28 @@ void set_output(const char* name, bool state) {
 
 // ==================== PUBLISH SENSOR DATA ====================
 void publish_sensor_data() {
-  mqtt_client.publish(MQTT_TOPIC_WATER_TEMP, String(sensors.water_temp).c_str());
-  mqtt_client.publish(MQTT_TOPIC_PH, String(sensors.ph).c_str());
-  mqtt_client.publish(MQTT_TOPIC_DO, String(sensors.do_value).c_str());
-  mqtt_client.publish(MQTT_TOPIC_CO2, String(sensors.co2).c_str());
-  mqtt_client.publish(MQTT_TOPIC_TURBIDITY, String(sensors.turbidity).c_str());
-  mqtt_client.publish(MQTT_TOPIC_AIR_TEMP, String(sensors.air_temp).c_str());
-  mqtt_client.publish(MQTT_TOPIC_HUMIDITY, String(sensors.air_humidity).c_str());
-  mqtt_client.publish(MQTT_TOPIC_LIGHT, String(sensors.light).c_str());
+  if (!mqtt_client.connected()) {
+    return;
+  }
   
-  // Publish combined state
-  StaticJsonDocument<256> doc;
-  doc["water_temp"] = sensors.water_temp;
-  doc["ph"] = sensors.ph;
-  doc["do"] = sensors.do_value;
-  doc["co2"] = sensors.co2;
-  doc["air_temp"] = sensors.air_temp;
-  doc["humidity"] = sensors.air_humidity;
-  doc["light"] = sensors.light;
-  doc["mode"] = current_mode;
-  doc["species"] = current_species;
-  
-  String payload;
-  serializeJson(doc, payload);
-  mqtt_client.publish(MQTT_TOPIC_STATE, payload.c_str());
+  // Publish individual sensor values
+  mqtt_client.publish(MQTT_TOPIC_WATER_TEMP, String(sensors.water_temp, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_PH, String(sensors.ph, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_DO, String(sensors.do_value, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_CO2, String(sensors.co2, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_TURBIDITY, String(sensors.turbidity).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_AIR_TEMP, String(sensors.air_temp, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_HUMIDITY, String(sensors.air_humidity, 2).c_str(), true);
+  mqtt_client.publish(MQTT_TOPIC_LIGHT, String(sensors.light, 0).c_str(), true);
 }
 
 // ==================== PUBLISH OUTPUT STATE ====================
 void publish_output_state() {
-  mqtt_client.publish(MQTT_TOPIC_PUMP, outputs.pump ? "ON" : "OFF");
+  if (!mqtt_client.connected()) {
+    return;
+  }
+  
+  mqtt_client.publish(MQTT_TOPIC_PUMP, outputs.pump ? "ON" : "OFF", true);
+  mqtt_client.publish(MQTT_TOPIC_CONTROL_MODE, current_mode, true);
+  mqtt_client.publish(MQTT_TOPIC_CONFIG_SPECIES, current_species, true);
 }
