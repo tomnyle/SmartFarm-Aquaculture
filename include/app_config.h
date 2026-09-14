@@ -21,32 +21,36 @@
 #define MQTT_CLIENT_ID "ESP32_AQUACULTURE"
 #define MQTT_RECONNECT_INTERVAL 5000
 
-// ==================== MQTT TOPICS ====================
-#define MQTT_TOPIC_BASE "smartfarm/aquaculture"
-#define MQTT_TOPIC_STATUS MQTT_TOPIC_BASE "/status"
-#define MQTT_TOPIC_STATE MQTT_TOPIC_BASE "/state"
+// ==================== HOME ASSISTANT MQTT DISCOVERY ====================
+#define HA_DISCOVERY_PREFIX "homeassistant"
+#define HA_DISCOVERY_ENABLED true
 
-// Sensor Topics
-#define MQTT_TOPIC_WATER_TEMP MQTT_TOPIC_BASE "/water_temp"
-#define MQTT_TOPIC_PH MQTT_TOPIC_BASE "/ph"
-#define MQTT_TOPIC_TURBIDITY MQTT_TOPIC_BASE "/turbidity"
-#define MQTT_TOPIC_DO MQTT_TOPIC_BASE "/do"
-#define MQTT_TOPIC_CO2 MQTT_TOPIC_BASE "/co2"
-#define MQTT_TOPIC_AIR_TEMP MQTT_TOPIC_BASE "/air_temp"
-#define MQTT_TOPIC_HUMIDITY MQTT_TOPIC_BASE "/humidity"
-#define MQTT_TOPIC_LIGHT MQTT_TOPIC_BASE "/light"
+// ==================== MQTT TOPICS (Home Assistant Format) ====================
+// Sensor Topics - State
+#define MQTT_TOPIC_WATER_TEMP HA_DISCOVERY_PREFIX "/sensor/aquaculture_water_temp/state"
+#define MQTT_TOPIC_PH HA_DISCOVERY_PREFIX "/sensor/aquaculture_ph/state"
+#define MQTT_TOPIC_TURBIDITY HA_DISCOVERY_PREFIX "/sensor/aquaculture_turbidity/state"
+#define MQTT_TOPIC_DO HA_DISCOVERY_PREFIX "/sensor/aquaculture_do/state"
+#define MQTT_TOPIC_CO2 HA_DISCOVERY_PREFIX "/sensor/aquaculture_co2/state"
+#define MQTT_TOPIC_AIR_TEMP HA_DISCOVERY_PREFIX "/sensor/aquaculture_air_temp/state"
+#define MQTT_TOPIC_HUMIDITY HA_DISCOVERY_PREFIX "/sensor/aquaculture_humidity/state"
+#define MQTT_TOPIC_LIGHT HA_DISCOVERY_PREFIX "/sensor/aquaculture_light/state"
 
-// Output Topics
-#define MQTT_TOPIC_PUMP MQTT_TOPIC_BASE "/pump"
-#define MQTT_TOPIC_AERATOR MQTT_TOPIC_BASE "/aerator"
-#define MQTT_TOPIC_CIRCULATION MQTT_TOPIC_BASE "/circulation"
-#define MQTT_TOPIC_FEEDER MQTT_TOPIC_BASE "/feeder"
+// Output Topics - State
+#define MQTT_TOPIC_PUMP HA_DISCOVERY_PREFIX "/switch/aquaculture_pump/state"
+#define MQTT_TOPIC_AERATOR HA_DISCOVERY_PREFIX "/switch/aquaculture_aerator/state"
+#define MQTT_TOPIC_CIRCULATION HA_DISCOVERY_PREFIX "/switch/aquaculture_circulation/state"
+#define MQTT_TOPIC_FEEDER HA_DISCOVERY_PREFIX "/switch/aquaculture_feeder/state"
 
-// Control Topics
-#define MQTT_TOPIC_CONTROL_PUMP MQTT_TOPIC_BASE "/control/pump"
-#define MQTT_TOPIC_CONTROL_AERATOR MQTT_TOPIC_BASE "/control/aerator"
-#define MQTT_TOPIC_CONTROL_MODE MQTT_TOPIC_BASE "/control/mode"
-#define MQTT_TOPIC_CONFIG_SPECIES MQTT_TOPIC_BASE "/config/species"
+// Control Topics - Command
+#define MQTT_TOPIC_CONTROL_PUMP HA_DISCOVERY_PREFIX "/switch/aquaculture_pump/command"
+#define MQTT_TOPIC_CONTROL_AERATOR HA_DISCOVERY_PREFIX "/switch/aquaculture_aerator/command"
+#define MQTT_TOPIC_CONTROL_MODE HA_DISCOVERY_PREFIX "/select/aquaculture_mode/command"
+#define MQTT_TOPIC_CONFIG_SPECIES HA_DISCOVERY_PREFIX "/select/aquaculture_species/command"
+
+// Status Topic
+#define MQTT_TOPIC_STATUS HA_DISCOVERY_PREFIX "/switch/aquaculture_status/state"
+#define MQTT_TOPIC_STATE HA_DISCOVERY_PREFIX "/switch/aquaculture_controller/state"
 
 // ==================== DEVICE CONFIGURATION ====================
 #define DEVICE_NAME "Aquaculture-Controller-001"
