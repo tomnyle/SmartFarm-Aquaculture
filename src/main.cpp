@@ -6,8 +6,7 @@
 #include <DHT.h>
 #include <Wire.h>
 #include <BH1750.h>
-#include "include/app_config.h"
-#include "include/pins.h"
+#include "app_config.h"
 
 // ==================== GLOBAL OBJECTS ====================
 WiFiClient espClient;
@@ -178,7 +177,6 @@ void reconnect_mqtt() {
     
     // Subscribe to control topics
     mqtt_client.subscribe(MQTT_TOPIC_CONTROL_PUMP);
-    mqtt_client.subscribe(MQTT_TOPIC_CONTROL_AERATOR);
     mqtt_client.subscribe(MQTT_TOPIC_CONTROL_MODE);
     mqtt_client.subscribe(MQTT_TOPIC_CONFIG_SPECIES);
     
