@@ -1,0 +1,244 @@
+{
+  "profiles": [
+    {
+      "id": 0,
+      "name_vn": "Cá Koi",
+      "name_en": "Koi",
+      "icon": "🐟",
+      "description": "Cá cảnh quý hiếm, yêu nước lạnh",
+      "temperature": {
+        "min": 15,
+        "max": 25,
+        "optimal": 20
+      },
+      "ph": {
+        "min": 6.5,
+        "max": 8.0,
+        "optimal": 7.5
+      },
+      "dissolved_oxygen": {
+        "min": 6.0,
+        "critical": 4.0
+      },
+      "water_level_percent": {
+        "min": 20,
+        "critical": 10
+      },
+      "feeding": {
+        "times": ["08:00", "14:00", "20:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Không dùng các hóa chất có hại. Thích nước sạch, oxy cao."
+    },
+    {
+      "id": 1,
+      "name_vn": "Cá Trắm",
+      "name_en": "Grass Carp",
+      "icon": "🐠",
+      "description": "Cá ăn cỏ, sinh sản nhanh",
+      "temperature": {
+        "min": 20,
+        "max": 30,
+        "optimal": 25
+      },
+      "ph": {
+        "min": 6.5,
+        "max": 8.0,
+        "optimal": 7.5
+      },
+      "dissolved_oxygen": {
+        "min": 5.0,
+        "critical": 3.5
+      },
+      "water_level_percent": {
+        "min": 25,
+        "critical": 15
+      },
+      "feeding": {
+        "times": ["06:00", "12:00", "18:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Cần có cỏ hoặc thức ăn chất lượng cao."
+    },
+    {
+      "id": 2,
+      "name_vn": "Cá Chép Giòn",
+      "name_en": "Common Carp",
+      "icon": "🐟",
+      "description": "Cá thương phẩm phổ biến",
+      "temperature": {
+        "min": 18,
+        "max": 28,
+        "optimal": 23
+      },
+      "ph": {
+        "min": 6.8,
+        "max": 8.0,
+        "optimal": 7.5
+      },
+      "dissolved_oxygen": {
+        "min": 5.0,
+        "critical": 3.0
+      },
+      "water_level_percent": {
+        "min": 25,
+        "critical": 15
+      },
+      "feeding": {
+        "times": ["06:00", "12:00", "18:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Dễ nuôi, chịu được điều kiện không lý tưởng."
+    },
+    {
+      "id": 3,
+      "name_vn": "Cá Tra",
+      "name_en": "Catfish (Pangasius)",
+      "icon": "🐟",
+      "description": "Cá thương phẩm, chịu đựng tốt",
+      "temperature": {
+        "min": 25,
+        "max": 32,
+        "optimal": 28
+      },
+      "ph": {
+        "min": 6.5,
+        "max": 8.0,
+        "optimal": 7.5
+      },
+      "dissolved_oxygen": {
+        "min": 4.0,
+        "critical": 2.0
+      },
+      "water_level_percent": {
+        "min": 30,
+        "critical": 20
+      },
+      "feeding": {
+        "times": ["06:00", "12:00", "18:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Chịu ít oxy hơn các loài khác. Sinh trưởng nhanh."
+    },
+    {
+      "id": 4,
+      "name_vn": "Cá Lóc",
+      "name_en": "Snakehead",
+      "icon": "🐟",
+      "description": "Cá hung dữ, chịu ít oxy",
+      "temperature": {
+        "min": 24,
+        "max": 32,
+        "optimal": 28
+      },
+      "ph": {
+        "min": 6.5,
+        "max": 7.5,
+        "optimal": 7.0
+      },
+      "dissolved_oxygen": {
+        "min": 3.0,
+        "critical": 1.5
+      },
+      "water_level_percent": {
+        "min": 30,
+        "critical": 20
+      },
+      "feeding": {
+        "times": ["07:00", "15:00", "19:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Có tính hung dữ, không nuôi cùng loài yếu. Chịu ít oxy nhất."
+    },
+    {
+      "id": 5,
+      "name_vn": "Tôm Thẻ",
+      "name_en": "Whiteleg Shrimp (Vannamei)",
+      "icon": "🦐",
+      "description": "Tôm nước lợ, lợi nhuận cao",
+      "temperature": {
+        "min": 28,
+        "max": 32,
+        "optimal": 30
+      },
+      "ph": {
+        "min": 7.5,
+        "max": 8.5,
+        "optimal": 8.0
+      },
+      "dissolved_oxygen": {
+        "min": 4.5,
+        "critical": 3.0
+      },
+      "water_level_percent": {
+        "min": 50,
+        "critical": 30
+      },
+      "feeding": {
+        "times": ["05:00", "11:00", "17:00", "23:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Tôm nước lợ, cần độ mặn 15-20 ppt. Lợi nhuận cao nhất."
+    },
+    {
+      "id": 6,
+      "name_vn": "Tôm Sú",
+      "name_en": "Tiger Shrimp (Monodon)",
+      "icon": "🦐",
+      "description": "Tôm nước lợ, hiếm nuôi",
+      "temperature": {
+        "min": 25,
+        "max": 32,
+        "optimal": 28
+      },
+      "ph": {
+        "min": 7.0,
+        "max": 8.5,
+        "optimal": 8.0
+      },
+      "dissolved_oxygen": {
+        "min": 4.0,
+        "critical": 2.5
+      },
+      "water_level_percent": {
+        "min": 50,
+        "critical": 30
+      },
+      "feeding": {
+        "times": ["05:00", "11:00", "17:00", "23:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Tôm nước lợ, dạo này ít nuôi. Yêu cầu kỹ thuật cao."
+    },
+    {
+      "id": 7,
+      "name_vn": "Cá Rô Phi",
+      "name_en": "Tilapia",
+      "icon": "🐠",
+      "description": "Cá dễ nuôi, phổ biến",
+      "temperature": {
+        "min": 25,
+        "max": 32,
+        "optimal": 28
+      },
+      "ph": {
+        "min": 6.5,
+        "max": 8.0,
+        "optimal": 7.5
+      },
+      "dissolved_oxygen": {
+        "min": 4.0,
+        "critical": 2.0
+      },
+      "water_level_percent": {
+        "min": 30,
+        "critical": 20
+      },
+      "feeding": {
+        "times": ["06:00", "12:00", "18:00"],
+        "duration_seconds": 300
+      },
+      "notes": "Rất dễ nuôi, chịu được điều kiện không lý tưởng. Thích nước ấm."
+    }
+  ]
+}
