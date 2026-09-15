@@ -1,130 +1,65 @@
-# SmartFarm Aquaculture Controller V0.1
+# SmartFarm Aquaculture
 
-ESP32-based aquaculture controller for family pond management with MQTT & Home Assistant integration.
+ESP32 firmware for aquaculture pond monitoring and control with MQTT and Home Assistant auto-discovery.
 
-## Features
+## What it does
 
-- **Autonomous Control**: Works independently even without Home Assistant
-- **Multi-Species Support**: Profiles for Koi, Catfish, Shrimp, Tilapia, and more
-- **4 Operating Modes**: AUTO, MANUAL, SCHEDULE, SAFE
-- **Core Sensors**:
-  - Water Temperature (DS18B20)
-  - pH Level (via ADS1115)
-  - Dissolved Oxygen (via ADS1115)
-  - Water Level
+- Publishes real-time pond/environment sensors over MQTT
+- Exposes relay outputs (pump, aerator, circulation, feeder) via MQTT
+- Auto-registers Home Assistant entities through MQTT Discovery
+- Runs a species-based AUTO rule engine for water quality control
+- Supports mode selection: `AUTO`, `MANUAL`, `SCHEDULE`, `SAFE`
 
-- **Relay Control** (8-channel):
-  - Aerator (Máy sục khí)
-  - Water Pump (Bơm cấp nước)
-  - Circulation Pump (Bơm tuần hoàn)
-  - Feeder (Máy cho ăn)
-  - Valve (Van)
-  - Light (Đèn)
-  - 2x Spare
+## Current sensors and outputs
 
-## Hardware Requirements
+### Sensors
+- Water temperature (DS18B20)
+- pH (analog)
+- Dissolved oxygen (analog)
+- CO2 (analog)
+- Turbidity (analog)
+- Air temperature + humidity (DHT22)
+- Light (BH1750 over I2C)
 
-- ESP32 DevKitC V4 / ESP-WROOM-32
-- DS18B20 Temperature Sensor
-- pH Electrode + ADS1115 ADC Module
-- Dissolved Oxygen Probe + ADS1115
-- Water Level Sensor
-- 8-Channel Relay Module
-- 5V Power Supply
+### Outputs
+- Pump
+- Aerator
+- Circulation
+- Feeder
 
-## Getting Started
+## Quick start
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/tomnyle/SmartFarm-Aquaculture.git
-cd SmartFarm-Aquaculture
-```
+1. Install PlatformIO.
+2. Configure Wi-Fi and MQTT in `include/app_config.h`.
+3. Build and flash:
 
-### 2. Configure
-Edit `include/app_config.h`:
-- WiFi SSID & Password
-- MQTT Broker Address
-- Device Name & Location
-
-### 3. Build & Upload
 ```bash
 platformio run -e esp32dev -t upload
-```
-
-### 4. Monitor Serial Output
-```bash
 platformio device monitor -b 115200
 ```
 
-## System Architecture
+4. Enable MQTT Discovery in Home Assistant.
+5. Verify entities appear under the discovered **Aquaculture Controller** device.
 
-```
-         Home Assistant
-              │
-             MQTT
-              │
-      Aquaculture ESP32
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-Sensors  Rule Engine  Outputs
-    │         │         │
-    └─────────┼─────────┘
-         Local Controller
-```
+> Security note: `include/app_config.h` currently contains plain-text credentials in this repository snapshot. Replace them before deployment.
 
-## Operating Modes
+## MQTT topic convention
 
-### AUTO Mode
-ESP32 automatically controls relays based on sensor readings and active profile thresholds.
+All topics are under:
 
-### MANUAL Mode
-Control relays directly from Home Assistant.
+- `smartfarm/aquaculture/sensor/...`
+- `smartfarm/aquaculture/output/...`
+- `smartfarm/aquaculture/control/.../set`
+- `smartfarm/aquaculture/config/...`
+- `smartfarm/aquaculture/status`
 
-### SCHEDULE Mode
-Execute predefined schedules (e.g., feeding times).
-
-### SAFE Mode
-Activated when critical errors detected:
-- Sensor failures
-- Water level too low
-- Temperature critical
-- DO critical
-
-## Profiles
-
-Each species has predefined parameter ranges:
-
-```json
-{
-  "name": "shrimp",
-  "temperature": { "min": 28, "max": 32 },
-  "ph": { "min": 7.5, "max": 8.5 },
-  "do": { "min": 5.0 }
-}
-```
-
-## MQTT Topics
-
-- `smartfarm/aquaculture/state` - System state (publish)
-- `smartfarm/aquaculture/sensor` - Sensor readings (publish)
-- `smartfarm/aquaculture/output` - Output status (publish)
-- `smartfarm/aquaculture/control` - Control commands (subscribe)
-- `smartfarm/aquaculture/config` - Configuration (subscribe)
-- `smartfarm/aquaculture/status` - Device status (publish)
+See full topic tables in `/docs/installation.md` and `/docs/home_assistant_setup.md`.
 
 ## Documentation
 
-See `/docs` folder for:
-- `architecture.md` - System design
-- `sensors.md` - Sensor specifications & calibration
-- `wiring.md` - Hardware wiring diagram
-- `mqtt.md` - MQTT protocol details
-
-## License
-
-MIT License - See LICENSE file
-
-## Author
-
-Tom Nyle (tomnyle) - 2026
+- [/docs/installation.md](/docs/installation.md)
+- [/docs/hardware_wiring.md](/docs/hardware_wiring.md)
+- [/docs/rule_engine.md](/docs/rule_engine.md)
+- [/docs/home_assistant_setup.md](/docs/home_assistant_setup.md)
+- [/docs/architecture.md](/docs/architecture.md)
+- [/docs/sensors.md](/docs/sensors.md)

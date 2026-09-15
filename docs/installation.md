@@ -1,0 +1,149 @@
+# Installation and Setup
+
+This guide covers firmware flashing, MQTT broker setup, and Home Assistant integration.
+
+## Prerequisites
+
+- ESP32 dev board (tested with `esp32dev` target)
+- USB cable for flashing
+- [PlatformIO](https://platformio.org/) (recommended)
+- MQTT broker (Mosquitto recommended)
+- Home Assistant with MQTT integration enabled
+- Sensors/relays wired to ESP32 (see `docs/hardware_wiring.md`)
+
+## 1) Configure firmware
+
+Edit:
+
+- `include/app_config.h`
+
+Set at minimum:
+
+- `WIFI_SSID`
+- `WIFI_PASSWORD`
+- `MQTT_BROKER`
+- `MQTT_PORT`
+- `MQTT_USER`
+- `MQTT_PASSWORD`
+- `MQTT_CLIENT_ID`
+
+Recommended:
+
+- Change `FW_DEVICE_ID` and `DEVICE_NAME`
+- Keep `HA_DISCOVERY_ENABLED true`
+
+## 2) Build and flash
+
+From repository root:
+
+```bash
+platformio run -e esp32dev -t upload
+```
+
+Open serial monitor:
+
+```bash
+platformio device monitor -b 115200
+```
+
+Look for:
+
+- Wi-Fi connected
+- MQTT connected
+- Home Assistant discovery publish logs
+
+## 3) MQTT broker setup (Mosquitto example)
+
+Install Mosquitto and create credentials:
+
+```bash
+sudo apt update
+sudo apt install -y mosquitto mosquitto-clients
+sudo mosquitto_passwd -c /etc/mosquitto/passwd smartfarm
+```
+
+Minimal `/etc/mosquitto/conf.d/smartfarm.conf`:
+
+```conf
+listener 1883
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+```
+
+Restart broker:
+
+```bash
+sudo systemctl restart mosquitto
+sudo systemctl enable mosquitto
+```
+
+## 4) Verify MQTT traffic
+
+Subscribe to all project topics:
+
+```bash
+mosquitto_sub -h <BROKER_IP> -u <USER> -P <PASSWORD> -t 'smartfarm/aquaculture/#' -v
+```
+
+Expected sensor topics:
+
+- `smartfarm/aquaculture/sensor/water_temp`
+- `smartfarm/aquaculture/sensor/ph`
+- `smartfarm/aquaculture/sensor/do`
+- `smartfarm/aquaculture/sensor/co2`
+- `smartfarm/aquaculture/sensor/turbidity`
+- `smartfarm/aquaculture/sensor/air_temp`
+- `smartfarm/aquaculture/sensor/humidity`
+- `smartfarm/aquaculture/sensor/light`
+
+Expected output/mode topics:
+
+- `smartfarm/aquaculture/output/pump`
+- `smartfarm/aquaculture/output/aerator`
+- `smartfarm/aquaculture/output/circulation`
+- `smartfarm/aquaculture/output/feeder`
+- `smartfarm/aquaculture/config/mode/state`
+- `smartfarm/aquaculture/config/species/state`
+- `smartfarm/aquaculture/status`
+
+## 5) Home Assistant MQTT Discovery setup
+
+In `configuration.yaml` (if not already configured by UI):
+
+```yaml
+mqtt:
+  broker: <BROKER_IP>
+  username: <MQTT_USER>
+  password: <MQTT_PASSWORD>
+  discovery: true
+  discovery_prefix: homeassistant
+```
+
+Reboot Home Assistant or reload MQTT integration.
+
+The firmware publishes discovery payloads for:
+
+- 8 sensors (`aquaculture_water_temp`, `aquaculture_ph`, `aquaculture_do`, `aquaculture_co2`, `aquaculture_turbidity`, `aquaculture_air_temp`, `aquaculture_humidity`, `aquaculture_light`)
+- 4 switches (`aquaculture_pump`, `aquaculture_aerator`, `aquaculture_circulation`, `aquaculture_feeder`)
+- 2 selects (`aquaculture_mode`, `aquaculture_species`)
+
+## 6) Send a control command (manual test)
+
+```bash
+mosquitto_pub -h <BROKER_IP> -u <USER> -P <PASSWORD> -t 'smartfarm/aquaculture/control/pump/set' -m 'ON'
+```
+
+Other command topics:
+
+- `smartfarm/aquaculture/control/aerator/set`
+- `smartfarm/aquaculture/control/circulation/set`
+- `smartfarm/aquaculture/control/feeder/set`
+- `smartfarm/aquaculture/config/mode/set`
+- `smartfarm/aquaculture/config/species/set`
+
+## Troubleshooting
+
+- **No MQTT connection**: verify broker IP/credentials in `include/app_config.h`
+- **No HA entities**: ensure MQTT Discovery is enabled and broker is shared between HA and ESP32
+- **No sensor updates**: check serial output and wiring in `docs/hardware_wiring.md`
+- **Commands not applied**: confirm messages are exactly `ON` / `OFF` for relay topics
