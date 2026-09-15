@@ -29,6 +29,8 @@ RelayManager relay_manager;
 RuleEngine rule_engine;
 Adafruit_ADS1115 ads_primary;
 Adafruit_ADS1115 ads_secondary;
+bool ads_primary_ready = false;
+bool ads_secondary_ready = false;
 
 // Concrete drivers / Driver cụ thể cho từng cảm biến theo phase.
 DS18B20Driver temperature_driver(TEMPERATURE_SENSOR_CONFIG);
@@ -69,6 +71,12 @@ uint32_t last_sensor_read = 0;
 uint32_t last_rule_run = 0;
 uint32_t last_publish = 0;
 
+SensorReading buildErrorReading() {
+    return {millis(), 0.0F, SENSOR_STATUS_ERROR, 1};
+}
+
+void storeReading(const char* sensor_id, const SensorReading& reading);
+
 // MQTT manual override / Điều khiển relay thủ công từ MQTT.
 void handleRelayCommand(const char* relay_name, RelayState state) {
     strcpy(current_mode, "MANUAL");
@@ -91,14 +99,14 @@ void handleModeCommand(const char* mode) {
 // Shared buses / Khởi tạo bus chung chỉ khi thật sự cần dùng.
 void initializeBuses() {
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
-    bool primary_needed = ENABLE_PH || ENABLE_DO;
-    bool secondary_needed = ENABLE_EC_TDS || ENABLE_ORP || ENABLE_TURBIDITY || ENABLE_CO2 || ENABLE_GAS_SENSOR;
+    const bool primary_needed = ENABLE_PH || ENABLE_DO;
+    const bool secondary_needed = ENABLE_EC_TDS || ENABLE_ORP || ENABLE_TURBIDITY || ENABLE_CO2 || ENABLE_GAS_SENSOR;
 
     if (primary_needed) {
-        ads_primary.begin(ADS1115_PRIMARY_ADDRESS);
+        ads_primary_ready = ads_primary.begin(ADS1115_PRIMARY_ADDRESS);
     }
     if (secondary_needed) {
-        ads_secondary.begin(ADS1115_SECONDARY_ADDRESS);
+        ads_secondary_ready = ads_secondary.begin(ADS1115_SECONDARY_ADDRESS);
     }
 }
 
@@ -106,7 +114,9 @@ void initializeBuses() {
 void initializeSensors() {
     for (auto* driver : sensor_drivers) {
         if (driver->isEnabled()) {
-            driver->begin();
+            if (!driver->begin()) {
+                storeReading(driver->getId(), buildErrorReading());
+            }
         }
     }
 }
@@ -134,16 +144,51 @@ void storeReading(const char* sensor_id, const SensorReading& reading) {
     }
 }
 
+bool requiresPrimaryAds(const char* sensor_id) {
+    return strcmp(sensor_id, "ph") == 0 || strcmp(sensor_id, "do") == 0;
+}
+
+bool requiresSecondaryAds(const char* sensor_id) {
+    return strcmp(sensor_id, "ec") == 0 ||
+           strcmp(sensor_id, "orp") == 0 ||
+           strcmp(sensor_id, "turbidity") == 0 ||
+           strcmp(sensor_id, "co2") == 0 ||
+           strcmp(sensor_id, "gas_sensor") == 0;
+}
+
 // Generic polling / Đọc toàn bộ driver qua interface trừu tượng.
 void readSensors() {
     for (auto* driver : sensor_drivers) {
+        if (requiresPrimaryAds(driver->getId()) && !ads_primary_ready) {
+            storeReading(driver->getId(), buildErrorReading());
+            continue;
+        }
+
+        if (requiresSecondaryAds(driver->getId()) && !ads_secondary_ready) {
+            storeReading(driver->getId(), buildErrorReading());
+            continue;
+        }
+
         storeReading(driver->getId(), driver->read());
     }
 }
 
-// Auto rules / Chỉ áp dụng rule khi ở AUTO hoặc SAFE.
+// Auto rules / SAFE mode ép đầu ra an toàn, AUTO mode chạy rule theo profile.
 void applyRulesIfNeeded() {
-    if (strcmp(current_mode, "AUTO") != 0 && strcmp(current_mode, "SAFE") != 0) {
+    if (strcmp(current_mode, "SAFE") == 0) {
+        relay_manager.setRelayState("aerator", RELAY_ON);
+        relay_manager.setRelayState("pump", RELAY_OFF);
+        relay_manager.setRelayState("circulation", RELAY_OFF);
+        relay_manager.setRelayState("feeder", RELAY_OFF);
+        relay_manager.setRelayState("valve", RELAY_OFF);
+        relay_manager.setRelayState("light", RELAY_OFF);
+        relay_manager.setRelayState("spare_1", RELAY_OFF);
+        relay_manager.setRelayState("spare_2", RELAY_OFF);
+        system_state = SYSTEM_SAFE;
+        return;
+    }
+
+    if (strcmp(current_mode, "AUTO") != 0) {
         return;
     }
 
@@ -151,6 +196,11 @@ void applyRulesIfNeeded() {
     relay_manager.setRelayState("aerator", evaluation.aerator);
     relay_manager.setRelayState("pump", evaluation.pump);
     relay_manager.setRelayState("circulation", evaluation.circulation);
+    relay_manager.setRelayState("feeder", evaluation.feeder);
+    relay_manager.setRelayState("valve", evaluation.valve);
+    relay_manager.setRelayState("light", evaluation.light);
+    relay_manager.setRelayState("spare_1", evaluation.spare_1);
+    relay_manager.setRelayState("spare_2", evaluation.spare_2);
     system_state = evaluation.system_state;
 }
 }

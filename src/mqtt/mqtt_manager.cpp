@@ -70,6 +70,9 @@ void MqttManager::publishDiscovery(const RelayManager& relay_manager, const Sens
 
     for (uint8_t i = 0; i < relay_manager.count(); ++i) {
         const RelayChannelState& channel = relay_manager.getChannels()[i];
+        if (!channel.enabled) {
+            continue;
+        }
         publishRelayDiscovery(
             channel.name,
             Topics::relay(device_id_.c_str(), channel.name),
@@ -139,6 +142,9 @@ void MqttManager::publishRelayStates(const RelayManager& relay_manager) {
 
     for (uint8_t i = 0; i < relay_manager.count(); ++i) {
         const RelayChannelState& channel = relay_manager.getChannels()[i];
+        if (!channel.enabled) {
+            continue;
+        }
         client_.publish(
             Topics::relay(device_id_.c_str(), channel.name).c_str(),
             channel.state == RELAY_ON ? "ON" : "OFF",

@@ -34,9 +34,9 @@ docs/
 
 ## Configuration
 
-- Chỉnh WiFi/MQTT trong `/home/runner/work/SmartFarm-Aquaculture/SmartFarm-Aquaculture/src/config/app_config.h`
-- Bật/tắt cảm biến trong `/home/runner/work/SmartFarm-Aquaculture/SmartFarm-Aquaculture/src/config/sensors_config.h`
-- Chỉnh relay mapping trong `/home/runner/work/SmartFarm-Aquaculture/SmartFarm-Aquaculture/src/config/relay_config.h`
+- Chỉnh WiFi/MQTT trong `src/config/app_config.h`
+- Bật/tắt cảm biến trong `src/config/sensors_config.h`
+- Chỉnh relay mapping trong `src/config/relay_config.h`
 
 ## Build
 

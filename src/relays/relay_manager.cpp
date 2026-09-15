@@ -49,6 +49,9 @@ uint8_t RelayManager::count() const {
 String RelayManager::toJson() const {
     StaticJsonDocument<512> document;
     for (uint8_t i = 0; i < RELAY_COUNT; ++i) {
+        if (!states_[i].enabled) {
+            continue;
+        }
         document[states_[i].name] = states_[i].state == RELAY_ON ? "ON" : "OFF";
     }
 
