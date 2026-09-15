@@ -20,7 +20,8 @@
 ### Water Level
 - Kiểu hiện tại: digital GPIO input
 - Driver: `src/sensors/water_level/water_level_driver.*`
-- Giá trị publish: `HIGH` hoặc `LOW`
+- Giả định cấu hình hiện tại: `active_state` là mức báo **nước thấp / low water**
+- Giá trị publish: `LOW` khi input bằng `active_state`, ngược lại publish `HIGH`
 
 ## Optional / Future Skeletons
 - EC/TDS

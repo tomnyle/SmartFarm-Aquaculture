@@ -94,22 +94,22 @@ void MqttManager::publishSensors(const SensorSnapshot& snapshot) {
     }
 
     StaticJsonDocument<512> document;
-    if (snapshot.temperature.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.temperature.status == SENSOR_STATUS_OK) {
         document["temperature"] = snapshot.temperature.value;
     }
-    if (snapshot.ph.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.ph.status == SENSOR_STATUS_OK) {
         document["ph"] = snapshot.ph.value;
     }
-    if (snapshot.dissolved_oxygen.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.dissolved_oxygen.status == SENSOR_STATUS_OK) {
         document["do"] = snapshot.dissolved_oxygen.value;
     }
-    if (snapshot.water_level.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.water_level.status == SENSOR_STATUS_OK) {
         document["water_level"] = snapshot.water_level.value > 0.5F ? "HIGH" : "LOW";
     }
-    if (snapshot.ec.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.ec.status == SENSOR_STATUS_OK) {
         document["ec"] = snapshot.ec.value;
     }
-    if (snapshot.orp.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.orp.status == SENSOR_STATUS_OK) {
         document["orp"] = snapshot.orp.value;
     }
 
@@ -117,22 +117,22 @@ void MqttManager::publishSensors(const SensorSnapshot& snapshot) {
     serializeJson(document, payload);
     client_.publish(Topics::sensorAll(device_id_.c_str()).c_str(), payload.c_str(), true);
 
-    if (snapshot.temperature.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.temperature.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorTemperature(device_id_.c_str()).c_str(), String(snapshot.temperature.value, 2).c_str(), true);
     }
-    if (snapshot.ph.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.ph.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorPh(device_id_.c_str()).c_str(), String(snapshot.ph.value, 2).c_str(), true);
     }
-    if (snapshot.dissolved_oxygen.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.dissolved_oxygen.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorDo(device_id_.c_str()).c_str(), String(snapshot.dissolved_oxygen.value, 2).c_str(), true);
     }
-    if (snapshot.water_level.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.water_level.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorWaterLevel(device_id_.c_str()).c_str(), snapshot.water_level.value > 0.5F ? "HIGH" : "LOW", true);
     }
-    if (snapshot.ec.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.ec.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorEc(device_id_.c_str()).c_str(), String(snapshot.ec.value, 2).c_str(), true);
     }
-    if (snapshot.orp.status != SENSOR_STATUS_DISABLED) {
+    if (snapshot.orp.status == SENSOR_STATUS_OK) {
         client_.publish(Topics::sensorOrp(device_id_.c_str()).c_str(), String(snapshot.orp.value, 2).c_str(), true);
     }
 }
@@ -215,6 +215,10 @@ void MqttManager::onMessage(char* topic, byte* payload, unsigned int length) {
     }
 
     if (topic_string.startsWith(relay_prefix) && relay_handler_ != nullptr) {
+        if (message != "ON" && message != "OFF") {
+            publishError("INVALID_RELAY_PAYLOAD");
+            return;
+        }
         const String relay_name = topic_string.substring(relay_prefix.length());
         relay_handler_(relay_name.c_str(), message == "ON" ? RELAY_ON : RELAY_OFF);
     }

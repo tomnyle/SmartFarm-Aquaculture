@@ -4,6 +4,7 @@
 #include <Adafruit_ADS1X15.h>
 #include "../include/config.h"
 #include "../include/types.h"
+#include "config/profiles.h"
 #include "wifi/wifi_manager.h"
 #include "mqtt/mqtt_manager.h"
 #include "relays/relay_manager.h"
