@@ -63,5 +63,3 @@ See full topic tables in `/docs/installation.md` and `/docs/home_assistant_setup
 - [docs/hardware_wiring.md](docs/hardware_wiring.md)
 - [docs/rule_engine.md](docs/rule_engine.md)
 - [docs/home_assistant_setup.md](docs/home_assistant_setup.md)
-- [docs/architecture.md](docs/architecture.md)
-- [docs/sensors.md](docs/sensors.md)
