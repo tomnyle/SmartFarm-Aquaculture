@@ -80,8 +80,9 @@ SensorReading buildErrorReading() { return {millis(), 0.0F, SENSOR_STATUS_ERROR,
 
 // MQTT manual override / Điều khiển relay thủ công từ MQTT.
 void handleRelayCommand(const char* relay_name, RelayState state) {
-    strcpy(current_mode, "MANUAL");
-    relay_manager.setRelayState(relay_name, state);
+    if (relay_manager.setRelayState(relay_name, state)) {
+        strcpy(current_mode, "MANUAL");
+    }
 }
 
 // Mode validation / Chỉ nhận các mode hợp lệ để tránh trạng thái rác.
@@ -181,6 +182,9 @@ void setup() {
 
     Logger::info("Starting SmartFarm Aquaculture firmware / Khoi dong firmware SmartFarm Aquaculture");
     active_profile = getSpeciesProfile(DEFAULT_SPECIES_PROFILE);
+    if (active_profile == nullptr) {
+        active_profile = getSpeciesProfile("tilapia");
+    }
 
     relay_manager.begin();
     initializeBuses();
@@ -221,7 +225,7 @@ void loop() {
         mqtt_manager.publishDiscovery(relay_manager, sensor_snapshot);
         mqtt_manager.publishSensors(sensor_snapshot);
         mqtt_manager.publishRelayStates(relay_manager);
-        mqtt_manager.publishSystemState(system_state, active_profile->id, current_mode);
+        mqtt_manager.publishSystemState(system_state, active_profile != nullptr ? active_profile->id : "tilapia", current_mode);
         if (system_state == SYSTEM_ERROR || system_state == SYSTEM_SAFE) {
             mqtt_manager.publishError(system_state == SYSTEM_SAFE ? "SAFE_MODE_ACTIVE" : "SENSOR_READ_ERROR");
         }

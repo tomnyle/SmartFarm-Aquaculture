@@ -4,7 +4,12 @@ DOSensorDriver::DOSensorDriver(Adafruit_ADS1115* ads, const ADS1115SensorConfig&
     : ads_(ads), config_(config), error_count_(0) {}
 
 bool DOSensorDriver::begin() {
-    return config_.base.enabled && ads_ != nullptr;
+    if (!config_.base.enabled || ads_ == nullptr) {
+        return false;
+    }
+
+    ads_->setGain(GAIN_TWOTHIRDS);
+    return true;
 }
 
 SensorReading DOSensorDriver::read() {

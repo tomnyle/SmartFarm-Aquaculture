@@ -3,6 +3,13 @@
 
 #include <Arduino.h>
 
+// Local override / File local không commit để giữ bí mật khi triển khai thực tế.
+#if defined(__has_include)
+#  if __has_include("app_config.local.h")
+#    include "app_config.local.h"
+#  endif
+#endif
+
 // Device identity / Định danh thiết bị.
 #define FW_VERSION "1.0.0"
 #define APP_DEVICE_ID "ESP32_AQUACULTURE_001"
@@ -10,12 +17,24 @@
 #define APP_DEVICE_LOCATION "Pond A"
 
 // WiFi and MQTT placeholders / Giá trị mẫu an toàn, cần thay khi triển khai thực tế.
+#ifndef WIFI_SSID
 #define WIFI_SSID "YOUR_WIFI_SSID"
+#endif
+#ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#endif
+#ifndef MQTT_BROKER
 #define MQTT_BROKER "192.168.1.10"
+#endif
+#ifndef MQTT_PORT
 #define MQTT_PORT 1883
+#endif
+#ifndef MQTT_USER
 #define MQTT_USER "mqtt_user"
+#endif
+#ifndef MQTT_PASSWORD
 #define MQTT_PASSWORD "mqtt_password"
+#endif
 #define MQTT_CLIENT_ID APP_DEVICE_ID
 
 // Shared timing / Chu kỳ xử lý chung.
