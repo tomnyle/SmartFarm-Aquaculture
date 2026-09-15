@@ -42,6 +42,7 @@ platformio device monitor -b 115200
    Discovery entities appear after the ESP32 has connected to MQTT at least once and published retained discovery topics.
    - See `/docs/home_assistant_setup.md` and `/docs/installation.md`
 5. Verify entities appear under the discovered SmartFarm aquaculture device (name shown in Home Assistant may vary by firmware/device settings).
+   - If entities do not appear, reboot ESP32 or force MQTT reconnect to republish discovery topics.
 
 > Security note: never commit real Wi-Fi/MQTT credentials. Keep deployment credentials in your local working copy only.
 
