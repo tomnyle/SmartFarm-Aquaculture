@@ -6,35 +6,47 @@
 
 // ==================== SENSOR READINGS ====================
 
+enum SensorHealthStatus : uint8_t {
+    SENSOR_NORMAL,
+    SENSOR_WARNING,
+    SENSOR_CRITICAL,
+    SENSOR_UNAVAILABLE
+};
+
+struct SensorReading {
+    float value;
+    float min_threshold;
+    float max_threshold;
+    float critical_low;
+    float critical_high;
+    uint32_t timestamp;
+    SensorHealthStatus status;
+    bool error;
+    String error_msg;
+};
+
 struct SensorReadings {
-    float water_temperature;      // °C
-    float water_ph;               // pH units
-    float dissolved_oxygen;       // mg/L or %
-    float water_level;            // cm
-    
-    uint32_t temperature_timestamp;
-    uint32_t ph_timestamp;
-    uint32_t do_timestamp;
-    uint32_t level_timestamp;
-    
-    bool temperature_valid;
-    bool ph_valid;
-    bool do_valid;
-    bool level_valid;
+    SensorReading water_temperature;
+    SensorReading water_ph;
+    SensorReading dissolved_oxygen;
+    SensorReading water_level;
+    SensorReading turbidity;
+    SensorReading air_temperature;
+    SensorReading humidity;
+    SensorReading light_level;
+    SensorReading co2;
 };
 
 // ==================== OUTPUT STATES ====================
 
 struct OutputStates {
-    bool aerator;           // Máy sục khí
-    bool water_pump;        // Bơm cấp nước
-    bool circulation;       // Bơm tuần hoàn
-    bool feeder;            // Máy cho ăn
-    bool valve;             // Van
-    bool light;             // Đèn
-    bool spare1;            // Dự phòng 1
-    bool spare2;            // Dự phòng 2
-    
+    bool aerator;
+    bool water_pump;
+    bool circulation;
+    bool feeder;
+    bool spare1;
+    bool spare2;
+
     uint32_t aerator_on_time;
     uint32_t water_pump_on_time;
     uint32_t circulation_on_time;
@@ -44,10 +56,10 @@ struct OutputStates {
 // ==================== SYSTEM STATUS ====================
 
 enum SystemMode {
-    MODE_AUTO,      // Tự động theo cảm biến
-    MODE_MANUAL,    // Điều khiển từ HA
-    MODE_SCHEDULE,  // Lịch biểu
-    MODE_SAFE       // Chế độ an toàn
+    MODE_AUTO,
+    MODE_MANUAL,
+    MODE_SCHEDULE,
+    MODE_SAFE
 };
 
 enum SystemStatus {
@@ -75,47 +87,39 @@ struct SystemState {
     SystemMode mode;
     SystemStatus status;
     uint32_t status_timestamp;
-    
-    uint32_t uptime;           // seconds
-    uint32_t last_mqtt_message; // timestamp
-    uint32_t last_rule_run;     // timestamp
-    
-    float cpu_load;            // 0.0 - 100.0
+
+    uint32_t uptime;
+    uint32_t last_mqtt_message;
+    uint32_t last_rule_run;
+
+    float cpu_load;
     uint32_t free_memory;
-    
+
     bool mqtt_connected;
-    bool ha_discovered;        // Home Assistant discovered
+    bool ha_discovered;
     bool config_valid;
-    
-    uint16_t error_code;       // ErrorCode
+
+    uint16_t error_code;
     char error_message[128];
 };
 
-// ==================== COMPLETE SYSTEM STATE ====================
-
 struct AquacultureSystemState {
-    // Device info
     char device_id[64];
     char firmware_version[32];
     uint32_t startup_time;
-    
-    // Data
+
     SensorReadings sensors;
     OutputStates outputs;
     SystemState system;
-    
-    // Active profile
+
     char active_profile[32];
-    
-    // Last 10 events (for debugging)
+
     struct {
         uint32_t timestamp;
         char message[128];
     } events[10];
     uint8_t event_index;
 };
-
-// ==================== STATE MANAGEMENT ====================
 
 class StateManager {
 public:
