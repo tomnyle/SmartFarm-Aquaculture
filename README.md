@@ -1,130 +1,70 @@
-# SmartFarm Aquaculture Controller V0.1
+# SmartFarm Aquaculture
 
-ESP32-based aquaculture controller for family pond management with MQTT & Home Assistant integration.
+ESP32 firmware for aquaculture pond monitoring and control with MQTT and Home Assistant auto-discovery.
 
-## Features
+## What it does
 
-- **Autonomous Control**: Works independently even without Home Assistant
-- **Multi-Species Support**: Profiles for Koi, Catfish, Shrimp, Tilapia, and more
-- **4 Operating Modes**: AUTO, MANUAL, SCHEDULE, SAFE
-- **Core Sensors**:
-  - Water Temperature (DS18B20)
-  - pH Level (via ADS1115)
-  - Dissolved Oxygen (via ADS1115)
-  - Water Level
+- Publishes real-time pond/environment sensors over MQTT
+- Exposes relay outputs (pump, aerator, circulation, feeder) via MQTT
+- Auto-registers Home Assistant entities through MQTT Discovery
+- Runs a species-based AUTO rule engine for water quality control
+- Mode selector values exposed over MQTT/HA: `AUTO`, `MANUAL`, `SCHEDULE`, `SAFE`
+- Current runtime behavior: `AUTO` rule automation is implemented, `MANUAL` accepts direct control commands, `SCHEDULE` and `SAFE` currently have no dedicated runtime handlers in `main.cpp`
 
-- **Relay Control** (8-channel):
-  - Aerator (Máy sục khí)
-  - Water Pump (Bơm cấp nước)
-  - Circulation Pump (Bơm tuần hoàn)
-  - Feeder (Máy cho ăn)
-  - Valve (Van)
-  - Light (Đèn)
-  - 2x Spare
+## Current sensors and outputs
 
-## Hardware Requirements
+### Sensors
+- Water temperature (DS18B20)
+- pH (analog)
+- Dissolved oxygen (analog)
+- CO2 (analog)
+- Turbidity (analog)
+- Air temperature + humidity (DHT22)
+- Light (BH1750 over I2C)
 
-- ESP32 DevKitC V4 / ESP-WROOM-32
-- DS18B20 Temperature Sensor
-- pH Electrode + ADS1115 ADC Module
-- Dissolved Oxygen Probe + ADS1115
-- Water Level Sensor
-- 8-Channel Relay Module
-- 5V Power Supply
+### Outputs
+- Pump
+- Aerator
+- Circulation
+- Feeder
 
-## Getting Started
+## Quick start
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/tomnyle/SmartFarm-Aquaculture.git
-cd SmartFarm-Aquaculture
-```
+1. Install PlatformIO.
+2. Configure Wi-Fi and MQTT in `include/app_config.h`.
+3. Build and flash:
 
-### 2. Configure
-Edit `include/app_config.h`:
-- WiFi SSID & Password
-- MQTT Broker Address
-- Device Name & Location
-
-### 3. Build & Upload
 ```bash
 platformio run -e esp32dev -t upload
-```
-
-### 4. Monitor Serial Output
-```bash
 platformio device monitor -b 115200
 ```
 
-## System Architecture
+4. Configure Home Assistant MQTT integration (UI recommended).  
+   Discovery entities appear after the ESP32 has connected to MQTT at least once and published retained discovery topics.
+   - See `docs/home_assistant_setup.md` and `docs/installation.md`
+5. Verify entities appear under the discovered SmartFarm aquaculture device (name shown in Home Assistant may vary by firmware/device settings).
+   - If entities do not appear, reboot ESP32 or force MQTT reconnect to republish discovery topics.
+   - If your broker was reset or retained messages were cleared, discovery must be republished from the device.
 
-```
-         Home Assistant
-              │
-             MQTT
-              │
-      Aquaculture ESP32
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-Sensors  Rule Engine  Outputs
-    │         │         │
-    └─────────┼─────────┘
-         Local Controller
-```
+> Security note: never commit real Wi-Fi/MQTT credentials. Keep deployment credentials in your local working copy only.
 
-## Operating Modes
+## MQTT topic convention
 
-### AUTO Mode
-ESP32 automatically controls relays based on sensor readings and active profile thresholds.
+All topics are under:
 
-### MANUAL Mode
-Control relays directly from Home Assistant.
+- `smartfarm/aquaculture/sensor/...`
+- `smartfarm/aquaculture/output/...`
+- `smartfarm/aquaculture/control/.../set`
+- `smartfarm/aquaculture/config/.../set` (commands) and `smartfarm/aquaculture/config/.../state` (reported state)
+- `smartfarm/aquaculture/status`
 
-### SCHEDULE Mode
-Execute predefined schedules (e.g., feeding times).
+See full topic tables in `docs/installation.md` and `docs/home_assistant_setup.md`.
 
-### SAFE Mode
-Activated when critical errors detected:
-- Sensor failures
-- Water level too low
-- Temperature critical
-- DO critical
-
-## Profiles
-
-Each species has predefined parameter ranges:
-
-```json
-{
-  "name": "shrimp",
-  "temperature": { "min": 28, "max": 32 },
-  "ph": { "min": 7.5, "max": 8.5 },
-  "do": { "min": 5.0 }
-}
-```
-
-## MQTT Topics
-
-- `smartfarm/aquaculture/state` - System state (publish)
-- `smartfarm/aquaculture/sensor` - Sensor readings (publish)
-- `smartfarm/aquaculture/output` - Output status (publish)
-- `smartfarm/aquaculture/control` - Control commands (subscribe)
-- `smartfarm/aquaculture/config` - Configuration (subscribe)
-- `smartfarm/aquaculture/status` - Device status (publish)
+Species profile note: `smartfarm/aquaculture/config/species/state` reports the selected species label, which may differ from the internally applied profile when fallback mapping is used.
 
 ## Documentation
 
-See `/docs` folder for:
-- `architecture.md` - System design
-- `sensors.md` - Sensor specifications & calibration
-- `wiring.md` - Hardware wiring diagram
-- `mqtt.md` - MQTT protocol details
-
-## License
-
-MIT License - See LICENSE file
-
-## Author
-
-Tom Nyle (tomnyle) - 2026
+- [docs/installation.md](docs/installation.md)
+- [docs/hardware_wiring.md](docs/hardware_wiring.md)
+- [docs/rule_engine.md](docs/rule_engine.md)
+- [docs/home_assistant_setup.md](docs/home_assistant_setup.md)
