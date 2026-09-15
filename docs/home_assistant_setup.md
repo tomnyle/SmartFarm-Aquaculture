@@ -6,9 +6,15 @@
 - MQTT broker reachable by both Home Assistant and ESP32
 - Firmware configured with the same broker credentials
 
-## 1) Enable MQTT Discovery
+## 1) Add MQTT integration (recommended)
 
-In `configuration.yaml` (if required):
+1. Go to **Settings -> Devices & Services -> Add Integration**.
+2. Add **MQTT** and set broker host/port/credentials.
+3. Keep discovery enabled (default prefix `homeassistant`).
+
+## 2) Optional legacy/manual configuration
+
+Use this only if your Home Assistant setup still manages MQTT in `configuration.yaml`:
 
 ```yaml
 mqtt:
@@ -19,7 +25,7 @@ mqtt:
   discovery_prefix: homeassistant
 ```
 
-## 2) Flash and boot ESP32
+## 3) Flash and boot ESP32
 
 After MQTT connection, firmware publishes retained discovery payloads to:
 
@@ -27,7 +33,7 @@ After MQTT connection, firmware publishes retained discovery payloads to:
 - `homeassistant/switch/.../config`
 - `homeassistant/select/.../config`
 
-## 3) Verify discovered entities
+## 4) Verify discovered entities
 
 Expected entities:
 
@@ -51,7 +57,7 @@ Expected entities:
 - `select.aquaculture_mode`
 - `select.aquaculture_species`
 
-## 4) Add dashboard card
+## 5) Add dashboard card
 
 ```yaml
 type: entities
@@ -74,7 +80,7 @@ entities:
   - switch.aquaculture_feeder
 ```
 
-## 5) Validate topic flow
+## 6) Validate topic flow
 
 Subscribe:
 

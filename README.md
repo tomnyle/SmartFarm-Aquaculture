@@ -41,7 +41,7 @@ platformio device monitor -b 115200
 4. Enable MQTT Discovery in Home Assistant.
 5. Verify entities appear under the discovered **Aquaculture Controller** device.
 
-> Security note: `include/app_config.h` currently contains plain-text credentials in this repository snapshot. Replace them before deployment.
+> Security note: never commit real Wi-Fi/MQTT credentials. Keep deployment credentials in your local working copy only.
 
 ## MQTT topic convention
 

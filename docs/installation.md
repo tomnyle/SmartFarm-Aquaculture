@@ -108,7 +108,15 @@ Expected output/mode topics:
 
 ## 5) Home Assistant MQTT Discovery setup
 
-In `configuration.yaml` (if not already configured by UI):
+### Recommended: configure MQTT integration in Home Assistant UI
+
+1. Go to **Settings -> Devices & Services -> Add Integration**.
+2. Add **MQTT** and enter your broker host/port/credentials.
+3. Ensure MQTT Discovery is enabled (default discovery prefix: `homeassistant`).
+
+### Optional legacy/manual path: `configuration.yaml`
+
+Use this only if your Home Assistant deployment still manages MQTT via YAML:
 
 ```yaml
 mqtt:
@@ -119,7 +127,7 @@ mqtt:
   discovery_prefix: homeassistant
 ```
 
-Reboot Home Assistant or reload MQTT integration.
+Restart Home Assistant or reload the MQTT integration after changes.
 
 The firmware publishes discovery payloads for:
 
