@@ -16,6 +16,7 @@ Base prefix: `smartfarm/aquaculture/{device_id}`
 - `conditions/ph`
 - `conditions/do`
 - `conditions/water_level`
+- `status/availability`
 - `status/error`
 
 ## Subscribe

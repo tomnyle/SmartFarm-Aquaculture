@@ -5,7 +5,11 @@ DOSensorDriver::DOSensorDriver(uint8_t channel, bool enabled, uint8_t address)
 
 bool DOSensorDriver::begin() {
   if (!enabled_) return false;
-  return ads_.begin(address_);
+  const bool ready = ads_.begin(address_);
+  if (ready) {
+    ads_.setGain(GAIN_TWOTHIRDS);
+  }
+  return ready;
 }
 
 SensorReading DOSensorDriver::read() {

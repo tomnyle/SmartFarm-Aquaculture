@@ -76,6 +76,9 @@ void evaluateAutomation() {
     if (systemState.mode == OperationMode::SAFE && systemState.selectedMode != OperationMode::SAFE) {
       systemState.mode = systemState.selectedMode;
     }
+    if (systemState.mode != OperationMode::SAFE) {
+      systemState.selectedMode = systemState.mode;
+    }
     systemState.status = "RUNNING";
   }
 
