@@ -107,3 +107,4 @@ mosquitto_pub -h <BROKER_IP> -u <USER> -P <PASSWORD> -t 'smartfarm/aquaculture/c
   - Switch topics use `ON` / `OFF`
   - `config/mode/set` expects `AUTO`, `MANUAL`, `SCHEDULE`, or `SAFE`
   - `config/species/set` expects a species label string
+  - Some discovered species labels currently fall back to default `Rô Phi` thresholds (no dedicated profile mapping yet)

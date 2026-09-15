@@ -145,3 +145,4 @@ Other command topics:
   - Relay control topics (`smartfarm/aquaculture/control/.../set`) require `ON` / `OFF`
   - Mode config topic (`smartfarm/aquaculture/config/mode/set`) requires mode string: `AUTO`, `MANUAL`, `SCHEDULE`, or `SAFE`
   - Species config topic (`smartfarm/aquaculture/config/species/set`) requires species label text (for example `Cá Chép` or `Tôm Thẻ`)
+  - Discovery currently exposes species labels without dedicated rule profiles (`Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`); those labels are accepted but use fallback `Rô Phi` thresholds
