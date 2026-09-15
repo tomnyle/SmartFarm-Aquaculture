@@ -54,7 +54,7 @@ All topics are under:
 - `smartfarm/aquaculture/sensor/...`
 - `smartfarm/aquaculture/output/...`
 - `smartfarm/aquaculture/control/.../set`
-- `smartfarm/aquaculture/config/...`
+- `smartfarm/aquaculture/config/.../set` (commands) and `smartfarm/aquaculture/config/.../state` (reported state)
 - `smartfarm/aquaculture/status`
 
 See full topic tables in `docs/installation.md` and `docs/home_assistant_setup.md`.
