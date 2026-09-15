@@ -147,6 +147,7 @@ Species selection note (important):
 - Dedicated rule profiles: `Cá Chép`, `Rô Phi`, `Cá Tra`, `Tôm Thẻ`
 - `Rô Phi` can be set manually on `smartfarm/aquaculture/config/species/set` even though it is not in the discovery dropdown options
 - Discovery-exposed labels `Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia` are accepted on `.../config/species/set` but currently use fallback `Rô Phi` thresholds
+- `smartfarm/aquaculture/config/species/state` echoes the selected label, not the resolved internal profile name
 
 ## Troubleshooting
 
