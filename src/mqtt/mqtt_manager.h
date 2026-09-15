@@ -39,7 +39,8 @@ private:
     static MqttManager* instance_;
     static void staticCallback(char* topic, byte* payload, unsigned int length);
     void onMessage(char* topic, byte* payload, unsigned int length);
-    void publishSensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* unit, const char* icon);
+    void publishSensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* unit, const char* icon, const char* device_class = nullptr);
+    void publishBinarySensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* payload_on, const char* payload_off, const char* icon);
     void publishRelayDiscovery(const char* relay_name, const String& state_topic, const String& command_topic);
 };
 

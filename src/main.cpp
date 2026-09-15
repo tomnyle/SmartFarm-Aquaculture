@@ -42,17 +42,6 @@ ORPDriver orp_driver(ORP_SENSOR_CONFIG);
 TurbidityDriver turbidity_driver(TURBIDITY_SENSOR_CONFIG);
 CO2Driver co2_driver(CO2_SENSOR_CONFIG);
 GasSensorDriver gas_sensor_driver(GAS_SENSOR_CONFIG);
-SensorDriver* sensor_drivers[] = {
-    &temperature_driver,
-    &ph_driver,
-    &do_driver,
-    &water_level_driver,
-    &ec_tds_driver,
-    &orp_driver,
-    &turbidity_driver,
-    &co2_driver,
-    &gas_sensor_driver
-};
 SensorSnapshot sensor_snapshot = {
     {0, 0.0F, ENABLE_TEMPERATURE ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0},
     {0, 0.0F, ENABLE_PH ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0},
@@ -64,6 +53,22 @@ SensorSnapshot sensor_snapshot = {
     {0, 0.0F, ENABLE_CO2 ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0},
     {0, 0.0F, ENABLE_GAS_SENSOR ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0}
 };
+struct SensorBinding {
+    SensorDriver* driver;
+    SensorReading* slot;
+};
+
+SensorBinding sensor_bindings[] = {
+    {&temperature_driver, &sensor_snapshot.temperature},
+    {&ph_driver, &sensor_snapshot.ph},
+    {&do_driver, &sensor_snapshot.dissolved_oxygen},
+    {&water_level_driver, &sensor_snapshot.water_level},
+    {&ec_tds_driver, &sensor_snapshot.ec},
+    {&orp_driver, &sensor_snapshot.orp},
+    {&turbidity_driver, &sensor_snapshot.turbidity},
+    {&co2_driver, &sensor_snapshot.co2},
+    {&gas_sensor_driver, &sensor_snapshot.gas_sensor}
+};
 SystemState system_state = SYSTEM_INIT;
 const SpeciesProfile* active_profile = nullptr;
 char current_mode[16] = "AUTO";
@@ -71,11 +76,7 @@ uint32_t last_sensor_read = 0;
 uint32_t last_rule_run = 0;
 uint32_t last_publish = 0;
 
-SensorReading buildErrorReading() {
-    return {millis(), 0.0F, SENSOR_STATUS_ERROR, 1};
-}
-
-void storeReading(const char* sensor_id, const SensorReading& reading);
+SensorReading buildErrorReading() { return {millis(), 0.0F, SENSOR_STATUS_ERROR, 1}; }
 
 // MQTT manual override / Điều khiển relay thủ công từ MQTT.
 void handleRelayCommand(const char* relay_name, RelayState state) {
@@ -112,64 +113,33 @@ void initializeBuses() {
 
 // Runtime skip for disabled sensors / Bỏ qua cảm biến đã tắt trong config.
 void initializeSensors() {
-    for (auto* driver : sensor_drivers) {
-        if (driver->isEnabled()) {
-            if (!driver->begin()) {
-                storeReading(driver->getId(), buildErrorReading());
+    for (auto& binding : sensor_bindings) {
+        if (binding.driver->isEnabled()) {
+            if (!binding.driver->begin()) {
+                *binding.slot = buildErrorReading();
             }
         }
     }
 }
 
-// Snapshot mapping / Ghi dữ liệu driver vào snapshot dùng chung.
-void storeReading(const char* sensor_id, const SensorReading& reading) {
-    if (strcmp(sensor_id, "temperature") == 0) {
-        sensor_snapshot.temperature = reading;
-    } else if (strcmp(sensor_id, "ph") == 0) {
-        sensor_snapshot.ph = reading;
-    } else if (strcmp(sensor_id, "do") == 0) {
-        sensor_snapshot.dissolved_oxygen = reading;
-    } else if (strcmp(sensor_id, "water_level") == 0) {
-        sensor_snapshot.water_level = reading;
-    } else if (strcmp(sensor_id, "ec") == 0) {
-        sensor_snapshot.ec = reading;
-    } else if (strcmp(sensor_id, "orp") == 0) {
-        sensor_snapshot.orp = reading;
-    } else if (strcmp(sensor_id, "turbidity") == 0) {
-        sensor_snapshot.turbidity = reading;
-    } else if (strcmp(sensor_id, "co2") == 0) {
-        sensor_snapshot.co2 = reading;
-    } else if (strcmp(sensor_id, "gas_sensor") == 0) {
-        sensor_snapshot.gas_sensor = reading;
+bool isBusReady(uint8_t bus_index) {
+    if (bus_index == 1) {
+        return ads_primary_ready;
     }
-}
-
-bool requiresPrimaryAds(const char* sensor_id) {
-    return strcmp(sensor_id, "ph") == 0 || strcmp(sensor_id, "do") == 0;
-}
-
-bool requiresSecondaryAds(const char* sensor_id) {
-    return strcmp(sensor_id, "ec") == 0 ||
-           strcmp(sensor_id, "orp") == 0 ||
-           strcmp(sensor_id, "turbidity") == 0 ||
-           strcmp(sensor_id, "co2") == 0 ||
-           strcmp(sensor_id, "gas_sensor") == 0;
+    if (bus_index == 2) {
+        return ads_secondary_ready;
+    }
+    return true;
 }
 
 // Generic polling / Đọc toàn bộ driver qua interface trừu tượng.
 void readSensors() {
-    for (auto* driver : sensor_drivers) {
-        if (requiresPrimaryAds(driver->getId()) && !ads_primary_ready) {
-            storeReading(driver->getId(), buildErrorReading());
+    for (auto& binding : sensor_bindings) {
+        if (!isBusReady(binding.driver->getBusIndex())) {
+            *binding.slot = buildErrorReading();
             continue;
         }
-
-        if (requiresSecondaryAds(driver->getId()) && !ads_secondary_ready) {
-            storeReading(driver->getId(), buildErrorReading());
-            continue;
-        }
-
-        storeReading(driver->getId(), driver->read());
+        *binding.slot = binding.driver->read();
     }
 }
 
@@ -225,11 +195,13 @@ void setup() {
 }
 
 void loop() {
-    if (!wifi_manager.isConnected()) {
+    bool wifi_connected = wifi_manager.isConnected();
+    if (!wifi_connected) {
         wifi_manager.connect();
+        wifi_connected = wifi_manager.isConnected();
     }
 
-    if (mqtt_manager.ensureConnected()) {
+    if (wifi_connected && mqtt_manager.ensureConnected()) {
         mqtt_manager.loop();
     }
 

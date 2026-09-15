@@ -14,6 +14,7 @@ public:
     SensorReading read() override;
     bool isEnabled() const override;
     const char* getId() const override;
+    uint8_t getBusIndex() const override;
 
 private:
     float toVoltage(int16_t raw) const;

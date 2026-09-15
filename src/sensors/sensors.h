@@ -10,6 +10,7 @@ public:
     virtual SensorReading read() = 0;
     virtual bool isEnabled() const = 0;
     virtual const char* getId() const = 0;
+    virtual uint8_t getBusIndex() const { return 0; }
 };
 
 #endif

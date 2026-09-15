@@ -22,7 +22,7 @@ Firmware được chia theo module để có thể bật/tắt cảm biến từ
 4. Đọc cảm biến theo chu kỳ
 5. Rule engine đánh giá theo species profile khi mode = AUTO
 6. Nếu mode = SAFE thì firmware ép relay về trạng thái an toàn (aerator ON, relay còn lại OFF)
-6. Publish `state`, `sensor/all`, sensor topics và relay topics qua MQTT
+7. Publish `state`, `sensor/all`, sensor topics và relay topics qua MQTT
 
 ## Extensibility
 

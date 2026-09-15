@@ -1,3 +1,4 @@
+#include <cstring>
 #include "mqtt_manager.h"
 #include "topics.h"
 #include "../config/app_config.h"
@@ -29,6 +30,10 @@ bool MqttManager::ensureConnected() {
         return true;
     }
 
+    if (WiFi.status() != WL_CONNECTED) {
+        return false;
+    }
+
     if ((millis() - last_connect_attempt_) < MQTT_RECONNECT_INTERVAL_MS) {
         return false;
     }
@@ -50,7 +55,7 @@ void MqttManager::publishDiscovery(const RelayManager& relay_manager, const Sens
     }
 
     if (snapshot.temperature.status != SENSOR_STATUS_DISABLED) {
-        publishSensorDiscovery("temperature", "Water Temperature", Topics::sensorTemperature(device_id_.c_str()), "°C", "mdi:thermometer");
+        publishSensorDiscovery("temperature", "Water Temperature", Topics::sensorTemperature(device_id_.c_str()), "°C", "mdi:thermometer", "temperature");
     }
     if (snapshot.ph.status != SENSOR_STATUS_DISABLED) {
         publishSensorDiscovery("ph", "Water pH", Topics::sensorPh(device_id_.c_str()), "pH", "mdi:test-tube");
@@ -59,7 +64,7 @@ void MqttManager::publishDiscovery(const RelayManager& relay_manager, const Sens
         publishSensorDiscovery("do", "Dissolved Oxygen", Topics::sensorDo(device_id_.c_str()), "mg/L", "mdi:water");
     }
     if (snapshot.water_level.status != SENSOR_STATUS_DISABLED) {
-        publishSensorDiscovery("water_level", "Water Level", Topics::sensorWaterLevel(device_id_.c_str()), "state", "mdi:waves-arrow-up");
+        publishBinarySensorDiscovery("water_level", "Water Level Low", Topics::sensorWaterLevel(device_id_.c_str()), "LOW", "HIGH", "mdi:waves-arrow-up");
     }
     if (snapshot.ec.status != SENSOR_STATUS_DISABLED) {
         publishSensorDiscovery("ec", "EC/TDS", Topics::sensorEc(device_id_.c_str()), "mS/cm", "mdi:flash");
@@ -215,12 +220,17 @@ void MqttManager::onMessage(char* topic, byte* payload, unsigned int length) {
     }
 }
 
-void MqttManager::publishSensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* unit, const char* icon) {
+void MqttManager::publishSensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* unit, const char* icon, const char* device_class) {
     StaticJsonDocument<384> document;
     document["name"] = name;
     document["unique_id"] = String(device_id_) + "_" + unique_id;
     document["state_topic"] = state_topic;
-    document["unit_of_measurement"] = unit;
+    if (unit != nullptr && strlen(unit) > 0) {
+        document["unit_of_measurement"] = unit;
+    }
+    if (device_class != nullptr && strlen(device_class) > 0) {
+        document["device_class"] = device_class;
+    }
     document["icon"] = icon;
     document["device"]["identifiers"][0] = device_id_;
     document["device"]["name"] = APP_DEVICE_NAME;
@@ -228,6 +238,23 @@ void MqttManager::publishSensorDiscovery(const char* unique_id, const char* name
     String payload;
     serializeJson(document, payload);
     const String config_topic = String("homeassistant/sensor/") + device_id_ + "/" + unique_id + "/config";
+    client_.publish(config_topic.c_str(), payload.c_str(), true);
+}
+
+void MqttManager::publishBinarySensorDiscovery(const char* unique_id, const char* name, const String& state_topic, const char* payload_on, const char* payload_off, const char* icon) {
+    StaticJsonDocument<384> document;
+    document["name"] = name;
+    document["unique_id"] = String(device_id_) + "_" + unique_id;
+    document["state_topic"] = state_topic;
+    document["payload_on"] = payload_on;
+    document["payload_off"] = payload_off;
+    document["icon"] = icon;
+    document["device"]["identifiers"][0] = device_id_;
+    document["device"]["name"] = APP_DEVICE_NAME;
+
+    String payload;
+    serializeJson(document, payload);
+    const String config_topic = String("homeassistant/binary_sensor/") + device_id_ + "/" + unique_id + "/config";
     client_.publish(config_topic.c_str(), payload.c_str(), true);
 }
 

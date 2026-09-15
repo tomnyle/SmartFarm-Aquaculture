@@ -36,6 +36,10 @@ const char* DOSensorDriver::getId() const {
     return config_.base.id;
 }
 
+uint8_t DOSensorDriver::getBusIndex() const {
+    return config_.ads_index;
+}
+
 float DOSensorDriver::toVoltage(int16_t raw) const {
     return raw * 0.1875F / 1000.0F;
 }

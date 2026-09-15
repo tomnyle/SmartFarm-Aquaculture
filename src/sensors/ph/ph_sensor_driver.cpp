@@ -36,6 +36,10 @@ const char* PHSensorDriver::getId() const {
     return config_.base.id;
 }
 
+uint8_t PHSensorDriver::getBusIndex() const {
+    return config_.ads_index;
+}
+
 float PHSensorDriver::toVoltage(int16_t raw) const {
     return raw * 0.1875F / 1000.0F;
 }
