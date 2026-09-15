@@ -141,4 +141,7 @@ Other command topics:
 - **No MQTT connection**: verify broker IP/credentials in `include/app_config.h`
 - **No HA entities**: ensure MQTT Discovery is enabled and broker is shared between HA and ESP32
 - **No sensor updates**: check serial output and wiring in `docs/hardware_wiring.md`
-- **Commands not applied**: confirm messages are exactly `ON` / `OFF` for relay topics
+- **Commands not applied**:
+  - Relay control topics (`smartfarm/aquaculture/control/.../set`) require `ON` / `OFF`
+  - Mode config topic (`smartfarm/aquaculture/config/mode/set`) requires mode string: `AUTO`, `MANUAL`, `SCHEDULE`, or `SAFE`
+  - Species config topic (`smartfarm/aquaculture/config/species/set`) requires species label text (for example `Cá Chép` or `Tôm Thẻ`)
