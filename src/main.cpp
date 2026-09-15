@@ -40,7 +40,10 @@ void handleIncomingCommands() {
 
   String requestedProfile;
   if (mqttManager.consumeProfileCommand(requestedProfile)) {
-    systemState.activeProfile = requestedProfile;
+    const SpeciesProfile* profile = rules_profiles::findByName(requestedProfile.c_str());
+    if (rules_profiles::isSupported(requestedProfile.c_str())) {
+      systemState.activeProfile = profile->name;
+    }
   }
 
   String schedulePayload;
@@ -119,9 +122,8 @@ void loop() {
   }
 
   if (now - systemState.lastRuleEvaluation >= constants::RULE_EVALUATION_INTERVAL_MS) {
-    if (systemState.mode == OperationMode::AUTO || systemState.mode == OperationMode::SAFE) {
-      evaluateAutomation();
-    } else if (systemState.mode == OperationMode::SCHEDULE) {
+    evaluateAutomation();
+    if (systemState.mode == OperationMode::SCHEDULE) {
       scheduleMode.tick(systemState.schedule, relayManager);
       systemState.status = "RUNNING";
     }

@@ -8,7 +8,8 @@ void ScheduleMode::configureDefaults(ScheduleState& schedule) const {
   schedule.entryCount = 3;
   schedule.activeRun = false;
   schedule.activeRelayName[0] = '\0';
-  schedule.activeUntilMs = 0;
+  schedule.activeStartedMs = 0;
+  schedule.activeDurationMs = 0;
   ScheduleEntry defaults[3] = {{"feeder", 8, 0, 10, 0}, {"feeder", 12, 0, 10, 0}, {"feeder", 17, 0, 10, 0}};
   for (uint8_t i = 0; i < schedule.entryCount; ++i) {
     schedule.entries[i] = defaults[i];
@@ -24,7 +25,8 @@ bool ScheduleMode::updateFromJson(const String& json, ScheduleState& schedule) c
   schedule.entryCount = 0;
   schedule.activeRun = false;
   schedule.activeRelayName[0] = '\0';
-  schedule.activeUntilMs = 0;
+  schedule.activeStartedMs = 0;
+  schedule.activeDurationMs = 0;
   for (JsonObject entry : entries) {
     if (schedule.entryCount >= constants::MAX_SCHEDULE_ENTRIES) break;
     ScheduleEntry& target = schedule.entries[schedule.entryCount++];
@@ -39,11 +41,13 @@ bool ScheduleMode::updateFromJson(const String& json, ScheduleState& schedule) c
 
 void ScheduleMode::tick(ScheduleState& schedule, RelayManager& relayManager) const {
   if (!schedule.enabled) return;
-  if (schedule.activeRun && millis() >= schedule.activeUntilMs) {
+  const uint32_t nowMs = millis();
+  if (schedule.activeRun && static_cast<uint32_t>(nowMs - schedule.activeStartedMs) >= schedule.activeDurationMs) {
     relayManager.setRelay(schedule.activeRelayName, false);
     schedule.activeRun = false;
     schedule.activeRelayName[0] = '\0';
-    schedule.activeUntilMs = 0;
+    schedule.activeStartedMs = 0;
+    schedule.activeDurationMs = 0;
   }
   if (schedule.activeRun) return;
   time_t now = time(nullptr);
@@ -58,7 +62,8 @@ void ScheduleMode::tick(ScheduleState& schedule, RelayManager& relayManager) con
       relayManager.setRelay(entry.relayName, true);
       strlcpy(schedule.activeRelayName, entry.relayName, sizeof(schedule.activeRelayName));
       schedule.activeRun = true;
-      schedule.activeUntilMs = millis() + (entry.durationSeconds * 1000UL);
+      schedule.activeStartedMs = nowMs;
+      schedule.activeDurationMs = entry.durationSeconds * 1000UL;
       entry.lastRunDay = dayKey;
     }
   }

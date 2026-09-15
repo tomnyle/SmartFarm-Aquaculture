@@ -20,4 +20,11 @@ const SpeciesProfile* findByName(const char* name) {
   }
   return &kProfiles[2];
 }
+
+bool isSupported(const char* name) {
+  for (uint8_t i = 0; i < count(); ++i) {
+    if (strcmp(kProfiles[i].name, name) == 0) return true;
+  }
+  return false;
+}
 }

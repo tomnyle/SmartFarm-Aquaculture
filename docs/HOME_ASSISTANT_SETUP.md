@@ -4,10 +4,9 @@ The firmware publishes MQTT discovery payloads under `homeassistant/...`, so sen
 
 ## Exposed entities
 - Sensors: temperature, pH, DO, water level
-- Condition sensors: temperature, pH, DO, water level
+- Status sensors: temperature condition, pH condition, DO condition, water level condition, system state, system error
 - Switches: aerator, pump, circulation, feeder, valve, light, spare1, spare2
 - Selectors: mode, profile
-- Text sensors: system state, error
 
 ## Example dashboard card
 ```yaml

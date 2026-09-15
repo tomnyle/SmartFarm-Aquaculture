@@ -70,8 +70,8 @@ void HADiscovery::publishSelect(PubSubClient& client, const char* objectId, cons
   client.publish(discoveryTopic("select", objectId).c_str(), payload.c_str(), true);
 }
 
-void HADiscovery::publishText(PubSubClient& client, const char* objectId, const char* name,
-                              const String& stateTopic, const char* icon) const {
+void HADiscovery::publishStatusSensor(PubSubClient& client, const char* objectId, const char* name,
+                                      const String& stateTopic, const char* icon) const {
   StaticJsonDocument<512> doc;
   doc["name"] = name;
   doc["unique_id"] = String(app_config::DEVICE_ID) + "_" + objectId;
@@ -89,12 +89,12 @@ void HADiscovery::publishAll(PubSubClient& client, const SystemState&) const {
   publishSensor(client, "ph", "Aquaculture pH", mqtt_topics::sensor("ph"), "pH", "mdi:test-tube");
   publishSensor(client, "do", "Aquaculture DO", mqtt_topics::sensor("do"), "mg/L", "mdi:water");
   publishSensor(client, "water_level", "Aquaculture Water Level", mqtt_topics::sensor("water_level"), "%", "mdi:water-percent");
-  publishText(client, "condition_temperature", "Temperature Condition", mqtt_topics::condition("temperature"), "mdi:thermometer-alert");
-  publishText(client, "condition_ph", "pH Condition", mqtt_topics::condition("ph"), "mdi:test-tube");
-  publishText(client, "condition_do", "DO Condition", mqtt_topics::condition("do"), "mdi:water-alert");
-  publishText(client, "condition_water_level", "Water Level Condition", mqtt_topics::condition("water_level"), "mdi:waves-arrow-down");
-  publishText(client, "system_state", "System State", mqtt_topics::systemState(), "mdi:information");
-  publishText(client, "system_error", "System Error", mqtt_topics::error(), "mdi:alert-circle");
+  publishStatusSensor(client, "condition_temperature", "Temperature Condition", mqtt_topics::condition("temperature"), "mdi:thermometer-alert");
+  publishStatusSensor(client, "condition_ph", "pH Condition", mqtt_topics::condition("ph"), "mdi:test-tube");
+  publishStatusSensor(client, "condition_do", "DO Condition", mqtt_topics::condition("do"), "mdi:water-alert");
+  publishStatusSensor(client, "condition_water_level", "Water Level Condition", mqtt_topics::condition("water_level"), "mdi:waves-arrow-down");
+  publishStatusSensor(client, "system_state", "System State", mqtt_topics::systemState(), "mdi:information");
+  publishStatusSensor(client, "system_error", "System Error", mqtt_topics::error(), "mdi:alert-circle");
 
   publishSwitch(client, "aerator", "Aerator", relay_names::AERATOR, "mdi:air-purifier");
   publishSwitch(client, "pump", "Pump", relay_names::PUMP, "mdi:pump");

@@ -7,6 +7,7 @@ namespace rules_profiles {
 const SpeciesProfile* all();
 uint8_t count();
 const SpeciesProfile* findByName(const char* name);
+bool isSupported(const char* name);
 }
 
 #endif

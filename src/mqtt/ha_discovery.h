@@ -16,8 +16,8 @@ class HADiscovery {
   void publishSelect(PubSubClient& client, const char* objectId, const char* name,
                      const String& stateTopic, const String& commandTopic,
                      const char* const* options, uint8_t optionCount, const char* icon) const;
-  void publishText(PubSubClient& client, const char* objectId, const char* name,
-                   const String& stateTopic, const char* icon) const;
+  void publishStatusSensor(PubSubClient& client, const char* objectId, const char* name,
+                           const String& stateTopic, const char* icon) const;
 };
 
 #endif
