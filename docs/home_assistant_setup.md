@@ -57,6 +57,11 @@ You can still set `Rô Phi` manually by publishing directly to `smartfarm/aquacu
 `smartfarm/aquaculture/config/species/state` echoes the selected label, not the resolved internal profile name; fallback-to-`Rô Phi` behavior is inferred from mapping rules above.
 So from Home Assistant alone, selected species label and applied threshold profile are not always a 1:1 match.
 
+Interface model to use in dashboards/automations:
+
+- **Selected species label (UI/state topic):** what user selected or sent to `config/species/set`
+- **Applied profile:** internal ruleset resolved by firmware mapping (not published as a separate MQTT topic in current firmware)
+
 ## 4) Add dashboard card
 
 ```yaml

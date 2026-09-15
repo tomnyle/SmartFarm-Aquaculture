@@ -122,6 +122,12 @@ The firmware publishes discovery payloads for:
 - 4 switches (`aquaculture_pump`, `aquaculture_aerator`, `aquaculture_circulation`, `aquaculture_feeder`)
 - 2 selects (`aquaculture_mode`, `aquaculture_species`)
 
+In Home Assistant, these appear as entities such as:
+
+- `sensor.aquaculture_water_temp`, `sensor.aquaculture_ph`, `sensor.aquaculture_do`
+- `switch.aquaculture_pump`, `switch.aquaculture_aerator`
+- `select.aquaculture_mode`, `select.aquaculture_species`
+
 ## 6) Send a control command (manual test)
 
 ```bash
