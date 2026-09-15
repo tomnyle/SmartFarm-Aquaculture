@@ -55,6 +55,7 @@ Rule-engine profile mapping currently supports: `Cá Chép`, `Rô Phi`, `Cá Tra
 `Rô Phi` is currently an internal/default profile and is not included as a direct discovery option.
 You can still set `Rô Phi` manually by publishing directly to `smartfarm/aquaculture/config/species/set`.
 `smartfarm/aquaculture/config/species/state` echoes the selected label, not the resolved internal profile name; fallback-to-`Rô Phi` behavior is inferred from mapping rules above.
+So from Home Assistant alone, selected species label and applied threshold profile are not always a 1:1 match.
 
 ## 4) Add dashboard card
 

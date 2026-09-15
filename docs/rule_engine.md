@@ -4,7 +4,7 @@ This document describes the current AUTO logic in `src/main.cpp` and species pro
 
 ## Supported species profiles
 
-The active species is read from `smartfarm/aquaculture/config/species/state` and controlled via `.../set`.
+The active species label is read from `smartfarm/aquaculture/config/species/state` and controlled via `.../set`.
 
 Profiles currently implemented by rule lookup:
 
@@ -15,7 +15,7 @@ Profiles currently implemented by rule lookup:
 
 If an unknown species string is selected, firmware falls back to **Rô Phi** thresholds.
 
-Home Assistant gets these species options from firmware discovery payloads in `src/main.cpp` (`aquaculture_species` select). The discovery list does not currently include `Rô Phi`; `Rô Phi` is used internally as the default/fallback profile. The discovery list also includes extra labels (`Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`) beyond the 4 mapped profiles above; those values fall back to **Rô Phi** thresholds until rule mapping is added.
+Home Assistant gets species options from firmware discovery payloads in `src/main.cpp` (`aquaculture_species` select). The discovery list does not currently include `Rô Phi`, so this mapped profile is not directly selectable from the discovered Home Assistant dropdown. To select `Rô Phi`, publish it manually to `smartfarm/aquaculture/config/species/set`. The discovery list also includes extra labels (`Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`) beyond the 4 mapped profiles above; those values fall back to **Rô Phi** thresholds until rule mapping is added.
 
 ## Threshold table
 
