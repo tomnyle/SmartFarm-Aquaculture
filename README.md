@@ -38,7 +38,8 @@ platformio run -e esp32dev -t upload
 platformio device monitor -b 115200
 ```
 
-4. Enable MQTT Discovery in Home Assistant.
+4. Configure Home Assistant MQTT integration first (UI recommended), then enable/confirm Discovery.
+   - See `/docs/home_assistant_setup.md` and `/docs/installation.md`
 5. Verify entities appear under the discovered **Aquaculture Controller** device.
 
 > Security note: never commit real Wi-Fi/MQTT credentials. Keep deployment credentials in your local working copy only.

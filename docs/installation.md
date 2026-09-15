@@ -114,7 +114,7 @@ Expected output/mode topics:
 2. Add **MQTT** and enter your broker host/port/credentials.
 3. Ensure MQTT Discovery is enabled (default discovery prefix: `homeassistant`).
 
-> Note: broker host/credentials for MQTT integration should be configured in the Home Assistant UI, not in `configuration.yaml` for current Home Assistant versions.
+> Note: for this project, configuring MQTT integration in the Home Assistant UI is the recommended path. YAML-based MQTT configuration can still be used if your deployment is managed that way.
 
 The firmware publishes discovery payloads for:
 

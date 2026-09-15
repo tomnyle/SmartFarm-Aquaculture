@@ -12,7 +12,7 @@
 2. Add **MQTT** and set broker host/port/credentials.
 3. Keep discovery enabled (default prefix `homeassistant`).
 
-> Note: broker host/credentials for MQTT integration should be configured in the Home Assistant UI, not in `configuration.yaml` for current Home Assistant versions.
+> Note: UI-based MQTT integration is recommended for this project. YAML-based MQTT configuration can still be used if your Home Assistant deployment is managed that way.
 
 ## 2) Flash and boot ESP32
 
