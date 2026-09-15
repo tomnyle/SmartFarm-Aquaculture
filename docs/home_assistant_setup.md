@@ -102,7 +102,7 @@ mosquitto_pub -h <BROKER_IP> -u <USER> -P <PASSWORD> -t 'smartfarm/aquaculture/c
 
 - **No entities discovered**: check MQTT Discovery enabled, then restart MQTT integration/Home Assistant
 - **No entities discovered after restart**: reboot ESP32 or force MQTT reconnect so discovery config topics are published again
-- **Unavailable entities**: ensure ESP32 is online and publishing retained topics
+- **Unavailable entities**: ensure ESP32 is online, connected to Wi-Fi/MQTT, and still publishing state updates
 - **Wrong values**: verify pin mapping and analog sensor scaling
 - **Commands ignored**:
   - Switch topics use `ON` / `OFF`
