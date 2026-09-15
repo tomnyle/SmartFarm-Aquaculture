@@ -1,130 +1,49 @@
-# SmartFarm Aquaculture Controller V0.1
+# SmartFarm Aquaculture Controller
 
-ESP32-based aquaculture controller for family pond management with MQTT & Home Assistant integration.
+Firmware ESP32 cho hệ thống quản lý ao nuôi thủy sản với kiến trúc mô-đun, MQTT và Home Assistant.
 
-## Features
+## Phase Summary
 
-- **Autonomous Control**: Works independently even without Home Assistant
-- **Multi-Species Support**: Profiles for Koi, Catfish, Shrimp, Tilapia, and more
-- **4 Operating Modes**: AUTO, MANUAL, SCHEDULE, SAFE
-- **Core Sensors**:
-  - Water Temperature (DS18B20)
-  - pH Level (via ADS1115)
-  - Dissolved Oxygen (via ADS1115)
-  - Water Level
+- **Phase 1 / Giai đoạn 1**: DS18B20, pH, DO, Water Level, 8 Relay, MQTT, Home Assistant
+- **Phase 2 / Giai đoạn 2**: EC/TDS, ORP, Turbidity (skeleton đã sẵn sàng)
+- **Phase 3 / Giai đoạn 3**: CO₂, gas sensors, smart water quality logic (future skeleton)
 
-- **Relay Control** (8-channel):
-  - Aerator (Máy sục khí)
-  - Water Pump (Bơm cấp nước)
-  - Circulation Pump (Bơm tuần hoàn)
-  - Feeder (Máy cho ăn)
-  - Valve (Van)
-  - Light (Đèn)
-  - 2x Spare
+## Project Layout
 
-## Hardware Requirements
+```text
+src/
+├── main.cpp
+├── wifi/
+├── mqtt/
+├── sensors/
+├── relays/
+├── rules/
+├── utils/
+└── config/
+include/
+├── config.h
+└── types.h
+docs/
+├── ARCHITECTURE.md
+├── SENSORS.md
+├── WIRING.md
+├── MQTT_PROTOCOL.md
+├── SETUP_GUIDE.md
+└── PHASE_ROADMAP.md
+```
 
-- ESP32 DevKitC V4 / ESP-WROOM-32
-- DS18B20 Temperature Sensor
-- pH Electrode + ADS1115 ADC Module
-- Dissolved Oxygen Probe + ADS1115
-- Water Level Sensor
-- 8-Channel Relay Module
-- 5V Power Supply
+## Configuration
 
-## Getting Started
+- Chỉnh WiFi/MQTT trong `src/config/app_config.local.h` (không commit) hoặc dùng placeholder trong `src/config/app_config.h`
+- Bật/tắt cảm biến trong `src/config/sensors_config.h`
+- Chỉnh relay mapping trong `src/config/relay_config.h`
 
-### 1. Clone Repository
+## Build
+
 ```bash
-git clone https://github.com/tomnyle/SmartFarm-Aquaculture.git
-cd SmartFarm-Aquaculture
+platformio run -e esp32dev
 ```
-
-### 2. Configure
-Edit `include/app_config.h`:
-- WiFi SSID & Password
-- MQTT Broker Address
-- Device Name & Location
-
-### 3. Build & Upload
-```bash
-platformio run -e esp32dev -t upload
-```
-
-### 4. Monitor Serial Output
-```bash
-platformio device monitor -b 115200
-```
-
-## System Architecture
-
-```
-         Home Assistant
-              │
-             MQTT
-              │
-      Aquaculture ESP32
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-Sensors  Rule Engine  Outputs
-    │         │         │
-    └─────────┼─────────┘
-         Local Controller
-```
-
-## Operating Modes
-
-### AUTO Mode
-ESP32 automatically controls relays based on sensor readings and active profile thresholds.
-
-### MANUAL Mode
-Control relays directly from Home Assistant.
-
-### SCHEDULE Mode
-Execute predefined schedules (e.g., feeding times).
-
-### SAFE Mode
-Activated when critical errors detected:
-- Sensor failures
-- Water level too low
-- Temperature critical
-- DO critical
-
-## Profiles
-
-Each species has predefined parameter ranges:
-
-```json
-{
-  "name": "shrimp",
-  "temperature": { "min": 28, "max": 32 },
-  "ph": { "min": 7.5, "max": 8.5 },
-  "do": { "min": 5.0 }
-}
-```
-
-## MQTT Topics
-
-- `smartfarm/aquaculture/state` - System state (publish)
-- `smartfarm/aquaculture/sensor` - Sensor readings (publish)
-- `smartfarm/aquaculture/output` - Output status (publish)
-- `smartfarm/aquaculture/control` - Control commands (subscribe)
-- `smartfarm/aquaculture/config` - Configuration (subscribe)
-- `smartfarm/aquaculture/status` - Device status (publish)
 
 ## Documentation
 
-See `/docs` folder for:
-- `architecture.md` - System design
-- `sensors.md` - Sensor specifications & calibration
-- `wiring.md` - Hardware wiring diagram
-- `mqtt.md` - MQTT protocol details
-
-## License
-
-MIT License - See LICENSE file
-
-## Author
-
-Tom Nyle (tomnyle) - 2026
+Xem thư mục `docs/` để biết chi tiết về kiến trúc, wiring, MQTT và lộ trình phát triển.
