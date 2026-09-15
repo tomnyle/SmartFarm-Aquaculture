@@ -73,6 +73,9 @@ struct ScheduleState {
   bool enabled;
   uint8_t entryCount;
   ScheduleEntry entries[constants::MAX_SCHEDULE_ENTRIES];
+  bool activeRun;
+  char activeRelayName[16];
+  uint32_t activeUntilMs;
 };
 
 struct ConditionSummary {

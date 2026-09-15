@@ -28,10 +28,12 @@ ScheduleMode scheduleMode;
 SafeMode safeMode;
 ErrorHandler errorHandler;
 SystemState systemState;
+bool discoveryPublished = false;
 
 void handleIncomingCommands() {
   OperationMode requestedMode;
   if (mqttManager.consumeModeCommand(requestedMode)) {
+    systemState.selectedMode = requestedMode;
     systemState.mode = requestedMode;
     systemState.status = requestedMode == OperationMode::SAFE ? "SAFE" : "RUNNING";
   }
@@ -48,7 +50,7 @@ void handleIncomingCommands() {
 
   String relayName;
   bool relayState = false;
-  if (mqttManager.consumeRelayCommand(relayName, relayState)) {
+  if (mqttManager.consumeRelayCommand(relayName, relayState) && systemState.mode == OperationMode::MANUAL) {
     manualMode.applyCommand(relayManager, relayName.c_str(), relayState);
   }
 }
@@ -68,6 +70,9 @@ void evaluateAutomation() {
     systemState.status = "SAFE";
   } else {
     errorHandler.clear(systemState);
+    if (systemState.mode == OperationMode::SAFE && systemState.selectedMode != OperationMode::SAFE) {
+      systemState.mode = systemState.selectedMode;
+    }
     systemState.status = "RUNNING";
   }
 
@@ -89,12 +94,22 @@ void setup() {
   wifiManager.ensureConnected();
   mqttManager.begin();
   mqttManager.loop();
+  if (mqttManager.connected()) {
+    mqttManager.publishDiscovery(systemState);
+    discoveryPublished = true;
+  }
   systemState.status = "READY";
 }
 
 void loop() {
   wifiManager.ensureConnected();
   mqttManager.loop();
+  if (mqttManager.connected() && !discoveryPublished) {
+    mqttManager.publishDiscovery(systemState);
+    discoveryPublished = true;
+  } else if (!mqttManager.connected()) {
+    discoveryPublished = false;
+  }
   handleIncomingCommands();
 
   const uint32_t now = millis();

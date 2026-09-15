@@ -44,8 +44,6 @@ void MQTTManager::loop() {
     if (client_.connected()) {
       client_.publish(mqtt_topics::availability().c_str(), "online", true);
       subscribeTopics();
-      SystemState state{};
-      discovery_.publishAll(client_, state);
     }
   }
   client_.loop();

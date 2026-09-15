@@ -7,6 +7,7 @@
 
 struct SystemState {
   OperationMode mode;
+  OperationMode selectedMode;
   String activeProfile;
   String status;
   String error;

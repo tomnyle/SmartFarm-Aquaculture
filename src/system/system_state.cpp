@@ -2,6 +2,7 @@
 
 void initializeSystemState(SystemState& state, const char* profileName) {
   state.mode = OperationMode::AUTO;
+  state.selectedMode = OperationMode::AUTO;
   state.activeProfile = profileName;
   state.status = "INIT";
   state.error = "";

@@ -32,7 +32,7 @@ include/
 ```
 
 ## Configure
-Edit `/home/runner/work/SmartFarm-Aquaculture/SmartFarm-Aquaculture/src/config/app_config.h` and replace the placeholder WiFi and MQTT values with your environment settings.
+Edit `src/config/app_config.h` and replace the placeholder WiFi and MQTT values with your environment settings.
 
 ## Build
 ```bash

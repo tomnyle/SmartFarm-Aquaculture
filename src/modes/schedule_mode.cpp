@@ -6,6 +6,9 @@
 void ScheduleMode::configureDefaults(ScheduleState& schedule) const {
   schedule.enabled = true;
   schedule.entryCount = 3;
+  schedule.activeRun = false;
+  schedule.activeRelayName[0] = '\0';
+  schedule.activeUntilMs = 0;
   ScheduleEntry defaults[3] = {{"feeder", 8, 0, 10, 0}, {"feeder", 12, 0, 10, 0}, {"feeder", 17, 0, 10, 0}};
   for (uint8_t i = 0; i < schedule.entryCount; ++i) {
     schedule.entries[i] = defaults[i];
@@ -19,6 +22,9 @@ bool ScheduleMode::updateFromJson(const String& json, ScheduleState& schedule) c
   if (entries.isNull()) return false;
   schedule.enabled = doc["enabled"] | true;
   schedule.entryCount = 0;
+  schedule.activeRun = false;
+  schedule.activeRelayName[0] = '\0';
+  schedule.activeUntilMs = 0;
   for (JsonObject entry : entries) {
     if (schedule.entryCount >= constants::MAX_SCHEDULE_ENTRIES) break;
     ScheduleEntry& target = schedule.entries[schedule.entryCount++];
@@ -33,6 +39,13 @@ bool ScheduleMode::updateFromJson(const String& json, ScheduleState& schedule) c
 
 void ScheduleMode::tick(ScheduleState& schedule, RelayManager& relayManager) const {
   if (!schedule.enabled) return;
+  if (schedule.activeRun && millis() >= schedule.activeUntilMs) {
+    relayManager.setRelay(schedule.activeRelayName, false);
+    schedule.activeRun = false;
+    schedule.activeRelayName[0] = '\0';
+    schedule.activeUntilMs = 0;
+  }
+  if (schedule.activeRun) return;
   time_t now = time(nullptr);
   if (now <= 0) return;
   struct tm localTime;
@@ -43,8 +56,9 @@ void ScheduleMode::tick(ScheduleState& schedule, RelayManager& relayManager) con
     if (entry.lastRunDay == dayKey) continue;
     if (entry.hour == localTime.tm_hour && entry.minute == localTime.tm_min) {
       relayManager.setRelay(entry.relayName, true);
-      delay(entry.durationSeconds * 1000UL);
-      relayManager.setRelay(entry.relayName, false);
+      strlcpy(schedule.activeRelayName, entry.relayName, sizeof(schedule.activeRelayName));
+      schedule.activeRun = true;
+      schedule.activeUntilMs = millis() + (entry.durationSeconds * 1000UL);
       entry.lastRunDay = dayKey;
     }
   }
