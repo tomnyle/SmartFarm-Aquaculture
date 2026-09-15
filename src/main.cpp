@@ -66,11 +66,14 @@ void evaluateAutomation() {
                                                         sensorManager.getDO(),
                                                         sensorManager.getWaterLevel());
   systemState.conditions = evaluation.conditions;
+  const bool safetyManaged = systemState.selectedMode == OperationMode::AUTO || systemState.mode == OperationMode::SAFE;
 
   if (evaluation.safeModeRequired) {
-    systemState.mode = OperationMode::SAFE;
     errorHandler.setError(systemState, evaluation.reason);
-    systemState.status = "SAFE";
+    if (safetyManaged) {
+      systemState.mode = OperationMode::SAFE;
+      systemState.status = "SAFE";
+    }
   } else {
     errorHandler.clear(systemState);
     if (systemState.mode == OperationMode::SAFE && systemState.selectedMode != OperationMode::SAFE) {
@@ -128,7 +131,9 @@ void loop() {
     evaluateAutomation();
     if (systemState.mode == OperationMode::SCHEDULE) {
       scheduleMode.tick(systemState.schedule, relayManager);
-      systemState.status = "RUNNING";
+      if (systemState.error.isEmpty()) {
+        systemState.status = "RUNNING";
+      }
     }
     systemState.lastRuleEvaluation = now;
   }

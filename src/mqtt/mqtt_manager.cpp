@@ -131,8 +131,7 @@ void MQTTManager::publishDiscovery(const SystemState& state) const {
 void MQTTManager::publishState(const SystemState& systemState, const SensorManager& sensors, const RelayManager& relays) const {
   if (!client_.connected()) return;
 
-  const SensorReading sensorValues[] = {sensors.getTemperature(), sensors.getPH(), sensors.getDO(), sensors.getWaterLevel(),
-                                        sensors.getEC(), sensors.getORP()};
+  const SensorReading sensorValues[] = {sensors.getTemperature(), sensors.getPH(), sensors.getDO(), sensors.getWaterLevel()};
   for (const auto& reading : sensorValues) {
     if (reading.available) {
       client_.publish(mqtt_topics::sensor(reading.key).c_str(), String(reading.value, 2).c_str(), true);

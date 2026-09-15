@@ -14,6 +14,7 @@ class PHSensorDriver : public SensorDriver {
 
  private:
   bool enabled_;
+  bool initialized_ = false;
   uint8_t channel_;
   uint8_t address_;
   Adafruit_ADS1115 ads_;

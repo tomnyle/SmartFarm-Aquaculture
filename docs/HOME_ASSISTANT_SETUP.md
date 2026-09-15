@@ -9,16 +9,18 @@ The firmware publishes MQTT discovery payloads under `homeassistant/...`, so sen
 - Selectors: mode, profile
 
 ## Example dashboard card
+Home Assistant may slug entity IDs differently based on your installation, so treat the IDs below as examples and adjust them to the discovered entities shown in Home Assistant.
+
 ```yaml
 type: entities
 title: SmartFarm Aquaculture
 entities:
-  - sensor.esp32_aquaculture_001_temperature
-  - sensor.esp32_aquaculture_001_ph
-  - sensor.esp32_aquaculture_001_do
-  - sensor.esp32_aquaculture_001_water_level
-  - switch.esp32_aquaculture_001_aerator
-  - switch.esp32_aquaculture_001_pump
-  - select.esp32_aquaculture_001_mode
-  - select.esp32_aquaculture_001_profile
+  - sensor.aquaculture_temperature
+  - sensor.aquaculture_ph
+  - sensor.aquaculture_do
+  - sensor.aquaculture_water_level
+  - switch.aerator
+  - switch.pump
+  - select.operation_mode
+  - select.species_profile
 ```
