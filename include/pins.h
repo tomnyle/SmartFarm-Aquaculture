@@ -25,6 +25,8 @@
 #define AERATOR_PIN 12      // Aerator relay
 #define CIRCULATION_PIN 14  // Circulation pump relay
 #define FEEDER_PIN 27       // Automatic feeder relay
+#define SPARE1_PIN 26       // Spare relay 1
+#define SPARE2_PIN 25       // Spare relay 2
 
 // Status LED (Optional)
 #define LED_PIN 2           // Built-in LED for status

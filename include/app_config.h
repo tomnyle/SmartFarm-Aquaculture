@@ -25,32 +25,71 @@
 #define HA_DISCOVERY_PREFIX "homeassistant"
 #define HA_DISCOVERY_ENABLED true
 
-// ==================== MQTT TOPICS (Home Assistant Format) ====================
+// ==================== MQTT TOPICS ====================
+#define MQTT_BASE_TOPIC "smartfarm/aquaculture/" FW_DEVICE_ID
+#define MQTT_SENSOR_BASE MQTT_BASE_TOPIC "/sensor"
+#define MQTT_RELAY_BASE MQTT_BASE_TOPIC "/relay"
+
 // Sensor Topics - State
-#define MQTT_TOPIC_WATER_TEMP HA_DISCOVERY_PREFIX "/sensor/aquaculture_water_temp/state"
-#define MQTT_TOPIC_PH HA_DISCOVERY_PREFIX "/sensor/aquaculture_ph/state"
-#define MQTT_TOPIC_TURBIDITY HA_DISCOVERY_PREFIX "/sensor/aquaculture_turbidity/state"
-#define MQTT_TOPIC_DO HA_DISCOVERY_PREFIX "/sensor/aquaculture_do/state"
-#define MQTT_TOPIC_CO2 HA_DISCOVERY_PREFIX "/sensor/aquaculture_co2/state"
-#define MQTT_TOPIC_AIR_TEMP HA_DISCOVERY_PREFIX "/sensor/aquaculture_air_temp/state"
-#define MQTT_TOPIC_HUMIDITY HA_DISCOVERY_PREFIX "/sensor/aquaculture_humidity/state"
-#define MQTT_TOPIC_LIGHT HA_DISCOVERY_PREFIX "/sensor/aquaculture_light/state"
+#define MQTT_TOPIC_WATER_TEMP MQTT_SENSOR_BASE "/water_temp"
+#define MQTT_TOPIC_WATER_TEMP_MIN MQTT_SENSOR_BASE "/water_temp/min"
+#define MQTT_TOPIC_WATER_TEMP_MAX MQTT_SENSOR_BASE "/water_temp/max"
+#define MQTT_TOPIC_WATER_TEMP_STATUS MQTT_SENSOR_BASE "/water_temp/status"
 
-// Output Topics - State
-#define MQTT_TOPIC_PUMP HA_DISCOVERY_PREFIX "/switch/aquaculture_pump/state"
-#define MQTT_TOPIC_AERATOR HA_DISCOVERY_PREFIX "/switch/aquaculture_aerator/state"
-#define MQTT_TOPIC_CIRCULATION HA_DISCOVERY_PREFIX "/switch/aquaculture_circulation/state"
-#define MQTT_TOPIC_FEEDER HA_DISCOVERY_PREFIX "/switch/aquaculture_feeder/state"
+#define MQTT_TOPIC_PH MQTT_SENSOR_BASE "/ph"
+#define MQTT_TOPIC_PH_MIN MQTT_SENSOR_BASE "/ph/min"
+#define MQTT_TOPIC_PH_MAX MQTT_SENSOR_BASE "/ph/max"
+#define MQTT_TOPIC_PH_STATUS MQTT_SENSOR_BASE "/ph/status"
 
-// Control Topics - Command
-#define MQTT_TOPIC_CONTROL_PUMP HA_DISCOVERY_PREFIX "/switch/aquaculture_pump/command"
-#define MQTT_TOPIC_CONTROL_AERATOR HA_DISCOVERY_PREFIX "/switch/aquaculture_aerator/command"
-#define MQTT_TOPIC_CONTROL_MODE HA_DISCOVERY_PREFIX "/select/aquaculture_mode/command"
-#define MQTT_TOPIC_CONFIG_SPECIES HA_DISCOVERY_PREFIX "/select/aquaculture_species/command"
+#define MQTT_TOPIC_DO MQTT_SENSOR_BASE "/do"
+#define MQTT_TOPIC_DO_MIN MQTT_SENSOR_BASE "/do/min"
+#define MQTT_TOPIC_DO_CRITICAL MQTT_SENSOR_BASE "/do/critical"
+#define MQTT_TOPIC_DO_STATUS MQTT_SENSOR_BASE "/do/status"
 
-// Status Topic
-#define MQTT_TOPIC_STATUS HA_DISCOVERY_PREFIX "/switch/aquaculture_status/state"
-#define MQTT_TOPIC_STATE HA_DISCOVERY_PREFIX "/switch/aquaculture_controller/state"
+#define MQTT_TOPIC_WATER_LEVEL MQTT_SENSOR_BASE "/water_level"
+#define MQTT_TOPIC_WATER_LEVEL_MIN MQTT_SENSOR_BASE "/water_level/min"
+#define MQTT_TOPIC_WATER_LEVEL_MAX MQTT_SENSOR_BASE "/water_level/max"
+#define MQTT_TOPIC_WATER_LEVEL_STATUS MQTT_SENSOR_BASE "/water_level/status"
+
+#define MQTT_TOPIC_TURBIDITY MQTT_SENSOR_BASE "/turbidity"
+#define MQTT_TOPIC_TURBIDITY_MAX MQTT_SENSOR_BASE "/turbidity/max"
+#define MQTT_TOPIC_TURBIDITY_STATUS MQTT_SENSOR_BASE "/turbidity/status"
+
+#define MQTT_TOPIC_AIR_TEMP MQTT_SENSOR_BASE "/air_temp"
+#define MQTT_TOPIC_AIR_TEMP_STATUS MQTT_SENSOR_BASE "/air_temp/status"
+
+#define MQTT_TOPIC_HUMIDITY MQTT_SENSOR_BASE "/humidity"
+#define MQTT_TOPIC_HUMIDITY_MIN MQTT_SENSOR_BASE "/humidity/min"
+#define MQTT_TOPIC_HUMIDITY_MAX MQTT_SENSOR_BASE "/humidity/max"
+#define MQTT_TOPIC_HUMIDITY_STATUS MQTT_SENSOR_BASE "/humidity/status"
+
+#define MQTT_TOPIC_LIGHT MQTT_SENSOR_BASE "/light"
+#define MQTT_TOPIC_LIGHT_MIN MQTT_SENSOR_BASE "/light/min"
+#define MQTT_TOPIC_LIGHT_STATUS MQTT_SENSOR_BASE "/light/status"
+
+#define MQTT_TOPIC_CO2 MQTT_SENSOR_BASE "/co2"
+#define MQTT_TOPIC_CO2_MAX MQTT_SENSOR_BASE "/co2/max"
+#define MQTT_TOPIC_CO2_STATUS MQTT_SENSOR_BASE "/co2/status"
+
+// Relay Topics - State/Command
+#define MQTT_TOPIC_PUMP_STATE MQTT_RELAY_BASE "/pump/state"
+#define MQTT_TOPIC_PUMP_COMMAND MQTT_RELAY_BASE "/pump/command/set"
+#define MQTT_TOPIC_AERATOR_STATE MQTT_RELAY_BASE "/aerator/state"
+#define MQTT_TOPIC_AERATOR_COMMAND MQTT_RELAY_BASE "/aerator/command/set"
+#define MQTT_TOPIC_CIRCULATION_STATE MQTT_RELAY_BASE "/circulation/state"
+#define MQTT_TOPIC_CIRCULATION_COMMAND MQTT_RELAY_BASE "/circulation/command/set"
+#define MQTT_TOPIC_FEEDER_STATE MQTT_RELAY_BASE "/feeder/state"
+#define MQTT_TOPIC_FEEDER_COMMAND MQTT_RELAY_BASE "/feeder/command/set"
+#define MQTT_TOPIC_SPARE1_STATE MQTT_RELAY_BASE "/spare1/state"
+#define MQTT_TOPIC_SPARE1_COMMAND MQTT_RELAY_BASE "/spare1/command/set"
+#define MQTT_TOPIC_SPARE2_STATE MQTT_RELAY_BASE "/spare2/state"
+#define MQTT_TOPIC_SPARE2_COMMAND MQTT_RELAY_BASE "/spare2/command/set"
+
+// Mode/Profile topics
+#define MQTT_TOPIC_MODE_STATE MQTT_BASE_TOPIC "/mode"
+#define MQTT_TOPIC_MODE_SET MQTT_BASE_TOPIC "/mode/set"
+#define MQTT_TOPIC_PROFILE_STATE MQTT_BASE_TOPIC "/profile"
+#define MQTT_TOPIC_PROFILE_SET MQTT_BASE_TOPIC "/profile/set"
 
 // ==================== DEVICE CONFIGURATION ====================
 #define DEVICE_NAME "Aquaculture-Controller-001"
@@ -91,6 +130,20 @@
 
 // CO2 (ppm)
 #define CO2_ALERT_HIGH 5.0
+
+// Water level (%)
+#define WATER_LEVEL_ALERT_LOW 20
+#define WATER_LEVEL_ALERT_HIGH 100
+
+// Turbidity (NTU)
+#define TURBIDITY_ALERT_HIGH 5.0
+
+// Humidity (%)
+#define HUMIDITY_ALERT_LOW 50
+#define HUMIDITY_ALERT_HIGH 80
+
+// Light (lux)
+#define LIGHT_ALERT_LOW 500
 
 // ==================== OUTPUT CONTROL ====================
 // Auto control conditions
