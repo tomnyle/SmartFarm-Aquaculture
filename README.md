@@ -40,7 +40,7 @@ platformio device monitor -b 115200
 
 4. Configure Home Assistant MQTT integration (UI recommended).  
    Discovery entities appear after the ESP32 has connected to MQTT at least once and published retained discovery topics.
-   - See `/docs/home_assistant_setup.md` and `/docs/installation.md`
+   - See `docs/home_assistant_setup.md` and `docs/installation.md`
 5. Verify entities appear under the discovered SmartFarm aquaculture device (name shown in Home Assistant may vary by firmware/device settings).
    - If entities do not appear, reboot ESP32 or force MQTT reconnect to republish discovery topics.
    - If your broker was reset or retained messages were cleared, discovery must be republished from the device.
@@ -57,7 +57,7 @@ All topics are under:
 - `smartfarm/aquaculture/config/...`
 - `smartfarm/aquaculture/status`
 
-See full topic tables in `/docs/installation.md` and `/docs/home_assistant_setup.md`.
+See full topic tables in `docs/installation.md` and `docs/home_assistant_setup.md`.
 
 ## Documentation
 
