@@ -44,8 +44,14 @@ bool MqttManager::ensureConnected() {
     }
 
     discovery_published_ = false;
-    client_.subscribe(Topics::controlMode(device_id_.c_str()).c_str());
-    client_.subscribe((Topics::controlRelayPrefix(device_id_.c_str()) + "#").c_str());
+    const bool mode_subscribed = client_.subscribe(Topics::controlMode(device_id_.c_str()).c_str());
+    const bool relay_subscribed = client_.subscribe((Topics::controlRelayPrefix(device_id_.c_str()) + "#").c_str());
+    if (!mode_subscribed || !relay_subscribed) {
+        publishError("MQTT_SUBSCRIBE_FAILED");
+        client_.disconnect();
+        return false;
+    }
+
     return true;
 }
 

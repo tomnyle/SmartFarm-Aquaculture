@@ -38,11 +38,11 @@ DS18B20Driver temperature_driver(TEMPERATURE_SENSOR_CONFIG);
 PHSensorDriver ph_driver(&ads_primary, PH_SENSOR_CONFIG);
 DOSensorDriver do_driver(&ads_primary, DO_SENSOR_CONFIG);
 WaterLevelDriver water_level_driver(WATER_LEVEL_SENSOR_CONFIG);
-ECTDSDriver ec_tds_driver(EC_TDS_SENSOR_CONFIG);
-ORPDriver orp_driver(ORP_SENSOR_CONFIG);
-TurbidityDriver turbidity_driver(TURBIDITY_SENSOR_CONFIG);
-CO2Driver co2_driver(CO2_SENSOR_CONFIG);
-GasSensorDriver gas_sensor_driver(GAS_SENSOR_CONFIG);
+ECTDSDriver ec_tds_driver(&ads_secondary, EC_TDS_SENSOR_CONFIG);
+ORPDriver orp_driver(&ads_secondary, ORP_SENSOR_CONFIG);
+TurbidityDriver turbidity_driver(&ads_secondary, TURBIDITY_SENSOR_CONFIG);
+CO2Driver co2_driver(&ads_secondary, CO2_SENSOR_CONFIG);
+GasSensorDriver gas_sensor_driver(&ads_secondary, GAS_SENSOR_CONFIG);
 SensorSnapshot sensor_snapshot = {
     {0, 0.0F, ENABLE_TEMPERATURE ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0},
     {0, 0.0F, ENABLE_PH ? SENSOR_STATUS_ERROR : SENSOR_STATUS_DISABLED, 0},
@@ -77,7 +77,25 @@ uint32_t last_sensor_read = 0;
 uint32_t last_rule_run = 0;
 uint32_t last_publish = 0;
 
-SensorReading buildErrorReading() { return {millis(), 0.0F, SENSOR_STATUS_ERROR, 1}; }
+SensorReading buildErrorReading(const SensorReading& previous) {
+    return {millis(), previous.value, SENSOR_STATUS_ERROR, static_cast<uint16_t>(previous.error_count + 1)};
+}
+
+RuleEvaluation buildSafeEvaluation() {
+    return {RELAY_ON, RELAY_OFF, RELAY_OFF, RELAY_OFF, RELAY_OFF, RELAY_OFF, RELAY_OFF, RELAY_OFF, SYSTEM_SAFE};
+}
+
+void applyRelayEvaluation(const RuleEvaluation& evaluation) {
+    relay_manager.setRelayState("aerator", evaluation.aerator);
+    relay_manager.setRelayState("pump", evaluation.pump);
+    relay_manager.setRelayState("circulation", evaluation.circulation);
+    relay_manager.setRelayState("feeder", evaluation.feeder);
+    relay_manager.setRelayState("valve", evaluation.valve);
+    relay_manager.setRelayState("light", evaluation.light);
+    relay_manager.setRelayState("spare_1", evaluation.spare_1);
+    relay_manager.setRelayState("spare_2", evaluation.spare_2);
+    system_state = evaluation.system_state;
+}
 
 // MQTT manual override / Điều khiển relay thủ công từ MQTT.
 void handleRelayCommand(const char* relay_name, RelayState state) {
@@ -107,9 +125,15 @@ void initializeBuses() {
 
     if (primary_needed) {
         ads_primary_ready = ads_primary.begin(ADS1115_PRIMARY_ADDRESS);
+        if (ads_primary_ready) {
+            ads_primary.setGain(GAIN_TWOTHIRDS);
+        }
     }
     if (secondary_needed) {
         ads_secondary_ready = ads_secondary.begin(ADS1115_SECONDARY_ADDRESS);
+        if (ads_secondary_ready) {
+            ads_secondary.setGain(GAIN_TWOTHIRDS);
+        }
     }
 }
 
@@ -118,7 +142,7 @@ void initializeSensors() {
     for (auto& binding : sensor_bindings) {
         if (binding.driver->isEnabled()) {
             if (!binding.driver->begin()) {
-                *binding.slot = buildErrorReading();
+                *binding.slot = buildErrorReading(*binding.slot);
             }
         }
     }
@@ -138,7 +162,7 @@ bool isBusReady(uint8_t bus_index) {
 void readSensors() {
     for (auto& binding : sensor_bindings) {
         if (!isBusReady(binding.driver->getBusIndex())) {
-            *binding.slot = buildErrorReading();
+            *binding.slot = buildErrorReading(*binding.slot);
             continue;
         }
         *binding.slot = binding.driver->read();
@@ -148,15 +172,7 @@ void readSensors() {
 // Auto rules / SAFE mode ép đầu ra an toàn, AUTO mode chạy rule theo profile.
 void applyRulesIfNeeded() {
     if (strcmp(current_mode, "SAFE") == 0) {
-        relay_manager.setRelayState("aerator", RELAY_ON);
-        relay_manager.setRelayState("pump", RELAY_OFF);
-        relay_manager.setRelayState("circulation", RELAY_OFF);
-        relay_manager.setRelayState("feeder", RELAY_OFF);
-        relay_manager.setRelayState("valve", RELAY_OFF);
-        relay_manager.setRelayState("light", RELAY_OFF);
-        relay_manager.setRelayState("spare_1", RELAY_OFF);
-        relay_manager.setRelayState("spare_2", RELAY_OFF);
-        system_state = SYSTEM_SAFE;
+        applyRelayEvaluation(buildSafeEvaluation());
         return;
     }
 
@@ -164,16 +180,8 @@ void applyRulesIfNeeded() {
         return;
     }
 
-    const RuleEvaluation evaluation = rule_engine.evaluate(sensor_snapshot, *active_profile);
-    relay_manager.setRelayState("aerator", evaluation.aerator);
-    relay_manager.setRelayState("pump", evaluation.pump);
-    relay_manager.setRelayState("circulation", evaluation.circulation);
-    relay_manager.setRelayState("feeder", evaluation.feeder);
-    relay_manager.setRelayState("valve", evaluation.valve);
-    relay_manager.setRelayState("light", evaluation.light);
-    relay_manager.setRelayState("spare_1", evaluation.spare_1);
-    relay_manager.setRelayState("spare_2", evaluation.spare_2);
-    system_state = evaluation.system_state;
+    const SpeciesProfile* profile = active_profile != nullptr ? active_profile : getSpeciesProfile("tilapia");
+    applyRelayEvaluation(rule_engine.evaluate(sensor_snapshot, *profile));
 }
 }
 
