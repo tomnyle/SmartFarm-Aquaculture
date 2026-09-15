@@ -7,17 +7,17 @@
 
 class PHSensorDriver : public SensorDriver {
  public:
-  PHSensorDriver(uint8_t channel, bool enabled = true, uint8_t address = 0x48);
+  PHSensorDriver(Adafruit_ADS1115& ads, uint8_t channel, bool enabled = true);
   bool begin() override;
   SensorReading read() override;
   bool isEnabled() const override { return enabled_; }
+  void setInitialized(bool initialized) { initialized_ = initialized; }
 
  private:
+  Adafruit_ADS1115& ads_;
   bool enabled_;
   bool initialized_ = false;
   uint8_t channel_;
-  uint8_t address_;
-  Adafruit_ADS1115 ads_;
 };
 
 #endif

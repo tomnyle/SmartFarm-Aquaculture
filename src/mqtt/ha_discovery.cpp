@@ -3,6 +3,7 @@
 #include "topics.h"
 #include "../config/app_config.h"
 #include "../relays/relay_names.h"
+#include "../rules/profiles.h"
 #include "../../include/version.h"
 
 namespace {
@@ -106,7 +107,12 @@ void HADiscovery::publishAll(PubSubClient& client, const SystemState&) const {
   publishSwitch(client, "spare2", "Spare 2", relay_names::SPARE2, "mdi:toggle-switch");
 
   static const char* const modes[] = {"AUTO", "MANUAL", "SCHEDULE", "SAFE"};
-  static const char* const profiles[] = {"Koi", "Catfish", "Shrimp", "Tilapia"};
+  const SpeciesProfile* profiles = rules_profiles::all();
+  const uint8_t profileCount = rules_profiles::count();
+  const char* profileNames[8] = {};
+  for (uint8_t i = 0; i < profileCount && i < 8; ++i) {
+    profileNames[i] = profiles[i].name;
+  }
   publishSelect(client, "mode", "Operation Mode", mqtt_topics::mode(), mqtt_topics::modeSet(), modes, 4, "mdi:cog");
-  publishSelect(client, "profile", "Species Profile", mqtt_topics::profile(), mqtt_topics::profileSet(), profiles, 4, "mdi:fish");
+  publishSelect(client, "profile", "Species Profile", mqtt_topics::profile(), mqtt_topics::profileSet(), profileNames, profileCount, "mdi:fish");
 }

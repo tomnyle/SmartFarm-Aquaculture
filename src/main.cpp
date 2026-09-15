@@ -140,13 +140,14 @@ void loop() {
 
   if (now - systemState.lastRuleEvaluation >= constants::RULE_EVALUATION_INTERVAL_MS) {
     evaluateAutomation();
-    if (systemState.mode == OperationMode::SCHEDULE) {
-      scheduleMode.tick(systemState.schedule, relayManager);
-      if (systemState.error.isEmpty()) {
-        systemState.status = "RUNNING";
-      }
-    }
     systemState.lastRuleEvaluation = now;
+  }
+
+  if (systemState.mode == OperationMode::SCHEDULE) {
+    scheduleMode.tick(systemState.schedule, relayManager);
+    if (systemState.error.isEmpty()) {
+      systemState.status = "RUNNING";
+    }
   }
 
   if (now - systemState.lastMqttPublish >= constants::MQTT_PUBLISH_INTERVAL_MS) {

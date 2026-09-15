@@ -1,15 +1,10 @@
 #include "ph_sensor_driver.h"
 
-PHSensorDriver::PHSensorDriver(uint8_t channel, bool enabled, uint8_t address)
-    : enabled_(enabled), channel_(channel), address_(address) {}
+PHSensorDriver::PHSensorDriver(Adafruit_ADS1115& ads, uint8_t channel, bool enabled)
+    : ads_(ads), enabled_(enabled), channel_(channel) {}
 
 bool PHSensorDriver::begin() {
-  if (!enabled_) return false;
-  initialized_ = ads_.begin(address_);
-  if (initialized_) {
-    ads_.setGain(GAIN_TWOTHIRDS);
-  }
-  return initialized_;
+  return enabled_ && initialized_;
 }
 
 SensorReading PHSensorDriver::read() {

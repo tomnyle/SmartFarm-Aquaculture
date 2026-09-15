@@ -3,9 +3,10 @@
 #include "../config/sensors_config.h"
 
 SensorManager::SensorManager()
-    : temperatureDriver_(sensors_config::ONE_WIRE_PIN, sensors_config::ENABLE_DS18B20),
-      phDriver_(sensors_config::PH_ADC_CHANNEL, sensors_config::ENABLE_PH),
-      doDriver_(sensors_config::DO_ADC_CHANNEL, sensors_config::ENABLE_DO),
+    : phase1Ads_(),
+      temperatureDriver_(sensors_config::ONE_WIRE_PIN, sensors_config::ENABLE_DS18B20),
+      phDriver_(phase1Ads_, sensors_config::PH_ADC_CHANNEL, sensors_config::ENABLE_PH),
+      doDriver_(phase1Ads_, sensors_config::DO_ADC_CHANNEL, sensors_config::ENABLE_DO),
       waterLevelDriver_(sensors_config::WATER_LEVEL_PIN, sensors_config::ENABLE_WATER_LEVEL),
       ecDriver_(sensors_config::ENABLE_EC_TDS),
       orpDriver_(sensors_config::ENABLE_ORP),
@@ -15,6 +16,12 @@ SensorManager::SensorManager()
 
 void SensorManager::begin() {
   Wire.begin(sensors_config::I2C_SDA_PIN, sensors_config::I2C_SCL_PIN);
+  const bool phase1AdsReady = phase1Ads_.begin(0x48);
+  if (phase1AdsReady) {
+    phase1Ads_.setGain(GAIN_TWOTHIRDS);
+  }
+  phDriver_.setInitialized(phase1AdsReady);
+  doDriver_.setInitialized(phase1AdsReady);
   temperatureDriver_.begin();
   phDriver_.begin();
   doDriver_.begin();

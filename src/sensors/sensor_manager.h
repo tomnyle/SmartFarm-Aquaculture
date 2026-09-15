@@ -1,6 +1,7 @@
 #ifndef SRC_SENSORS_SENSOR_MANAGER_H
 #define SRC_SENSORS_SENSOR_MANAGER_H
 
+#include <Adafruit_ADS1X15.h>
 #include "temperature/ds18b20_driver.h"
 #include "ph/ph_sensor_driver.h"
 #include "dissolved_oxygen/do_sensor_driver.h"
@@ -28,6 +29,7 @@ class SensorManager {
   SensorReading getGasSensor() const { return gasSensor_; }
 
  private:
+  Adafruit_ADS1115 phase1Ads_;
   DS18B20Driver temperatureDriver_;
   PHSensorDriver phDriver_;
   DOSensorDriver doDriver_;
