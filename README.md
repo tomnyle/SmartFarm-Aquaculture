@@ -38,7 +38,8 @@ platformio run -e esp32dev -t upload
 platformio device monitor -b 115200
 ```
 
-4. Configure Home Assistant MQTT integration first (UI recommended). MQTT Discovery entities are then published automatically by firmware.
+4. Configure Home Assistant MQTT integration (UI recommended).  
+   Discovery entities appear after the ESP32 has connected to MQTT at least once and published retained discovery topics.
    - See `/docs/home_assistant_setup.md` and `/docs/installation.md`
 5. Verify entities appear under the discovered **Aquaculture Controller** device.
 
