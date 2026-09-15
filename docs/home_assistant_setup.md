@@ -46,6 +46,19 @@ Expected entities:
 - `select.aquaculture_mode`
 - `select.aquaculture_species`
 
+Current `select.aquaculture_species` options published by firmware discovery:
+
+- `Koi`
+- `Cá Trắm`
+- `Cá Chép`
+- `Cá Tra`
+- `Cá Lóc`
+- `Tôm Thẻ`
+- `Tôm Sú`
+- `Tilapia`
+
+Rule-engine profile mapping currently supports: `Cá Chép`, `Rô Phi`, `Cá Tra`, `Tôm Thẻ`. Other selected labels currently fall back to `Rô Phi` thresholds.
+
 ## 4) Add dashboard card
 
 ```yaml

@@ -15,7 +15,7 @@ Profiles currently implemented by rule lookup:
 
 If an unknown species string is selected, firmware falls back to **Rô Phi** thresholds.
 
-Home Assistant currently exposes more selectable labels (`Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`) than the rule mapper supports; those values will also fall back to **Rô Phi** until mapping is added.
+Home Assistant gets these species options from firmware discovery payloads in `src/main.cpp` (`aquaculture_species` select). The discovery list currently includes extra labels (`Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`) beyond the 4 mapped profiles above; those values fall back to **Rô Phi** thresholds until rule mapping is added.
 
 ## Threshold table
 
