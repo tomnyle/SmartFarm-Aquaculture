@@ -15,12 +15,12 @@ Home Assistant may slug entity IDs differently based on your installation, so tr
 type: entities
 title: SmartFarm Aquaculture
 entities:
-  - sensor.aquaculture_temperature
-  - sensor.aquaculture_ph
-  - sensor.aquaculture_do
-  - sensor.aquaculture_water_level
-  - switch.aerator
-  - switch.pump
-  - select.operation_mode
-  - select.species_profile
+  - <temperature_entity_id>
+  - <ph_entity_id>
+  - <do_entity_id>
+  - <water_level_entity_id>
+  - <aerator_switch_entity_id>
+  - <pump_switch_entity_id>
+  - <mode_select_entity_id>
+  - <profile_select_entity_id>
 ```

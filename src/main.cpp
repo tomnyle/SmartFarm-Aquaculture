@@ -41,14 +41,18 @@ void handleIncomingCommands() {
   String requestedProfile;
   if (mqttManager.consumeProfileCommand(requestedProfile)) {
     const SpeciesProfile* profile = rules_profiles::findByName(requestedProfile.c_str());
-    if (rules_profiles::isSupported(requestedProfile.c_str())) {
+    if (profile && rules_profiles::isSupported(requestedProfile.c_str())) {
       systemState.activeProfile = profile->name;
+    } else {
+      errorHandler.setError(systemState, "invalid_profile");
     }
   }
 
   String schedulePayload;
   if (mqttManager.consumeScheduleCommand(schedulePayload)) {
-    scheduleMode.updateFromJson(schedulePayload, systemState.schedule);
+    if (!scheduleMode.updateFromJson(schedulePayload, systemState.schedule)) {
+      errorHandler.setError(systemState, "invalid_schedule");
+    }
   }
 
   String relayName;
@@ -60,6 +64,13 @@ void handleIncomingCommands() {
 
 void evaluateAutomation() {
   const SpeciesProfile* profile = rules_profiles::findByName(systemState.activeProfile.c_str());
+  if (!profile) {
+    profile = rules_profiles::findByName(app_config::DEFAULT_PROFILE);
+    if (!profile) {
+      return;
+    }
+    systemState.activeProfile = profile->name;
+  }
   const RuleEvaluation evaluation = ruleEngine.evaluate(*profile,
                                                         sensorManager.getTemperature(),
                                                         sensorManager.getPH(),

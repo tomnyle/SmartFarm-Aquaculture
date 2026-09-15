@@ -21,21 +21,25 @@ bool ScheduleMode::updateFromJson(const String& json, ScheduleState& schedule) c
   if (deserializeJson(doc, json) != DeserializationError::Ok) return false;
   JsonArray entries = doc["entries"].as<JsonArray>();
   if (entries.isNull()) return false;
-  schedule.enabled = doc["enabled"] | true;
-  schedule.entryCount = 0;
-  schedule.activeRun = false;
-  schedule.activeRelayName[0] = '\0';
-  schedule.activeStartedMs = 0;
-  schedule.activeDurationMs = 0;
+  ScheduleState next = schedule;
+  next.enabled = doc["enabled"] | true;
+  next.entryCount = 0;
+  next.activeRun = false;
+  next.activeRelayName[0] = '\0';
+  next.activeStartedMs = 0;
+  next.activeDurationMs = 0;
   for (JsonObject entry : entries) {
-    if (schedule.entryCount >= constants::MAX_SCHEDULE_ENTRIES) break;
-    ScheduleEntry& target = schedule.entries[schedule.entryCount++];
+    if (next.entryCount >= constants::MAX_SCHEDULE_ENTRIES) return false;
+    const uint16_t durationSeconds = entry["duration"] | 0;
+    if (durationSeconds == 0) return false;
+    ScheduleEntry& target = next.entries[next.entryCount++];
     strlcpy(target.relayName, entry["relay"] | relay_names::FEEDER, sizeof(target.relayName));
     target.hour = entry["hour"] | 0;
     target.minute = entry["minute"] | 0;
-    target.durationSeconds = entry["duration"] | 10;
+    target.durationSeconds = durationSeconds;
     target.lastRunDay = 0;
   }
+  schedule = next;
   return true;
 }
 

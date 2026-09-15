@@ -18,7 +18,7 @@ const SpeciesProfile* findByName(const char* name) {
   for (uint8_t i = 0; i < count(); ++i) {
     if (strcmp(kProfiles[i].name, name) == 0) return &kProfiles[i];
   }
-  return &kProfiles[2];
+  return nullptr;
 }
 
 bool isSupported(const char* name) {
