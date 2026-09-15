@@ -136,6 +136,11 @@ Other command topics:
 - `smartfarm/aquaculture/config/mode/set`
 - `smartfarm/aquaculture/config/species/set`
 
+Species selection note (important):
+
+- Dedicated rule profiles: `Cá Chép`, `Rô Phi`, `Cá Tra`, `Tôm Thẻ`
+- Discovery-exposed labels `Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia` are accepted on `.../config/species/set` but currently use fallback `Rô Phi` thresholds
+
 ## Troubleshooting
 
 - **No MQTT connection**: verify broker IP/credentials in `include/app_config.h`

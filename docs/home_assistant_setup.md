@@ -54,6 +54,7 @@ Current `select.aquaculture_species` options published by firmware discovery:
 Rule-engine profile mapping currently supports: `Cá Chép`, `Rô Phi`, `Cá Tra`, `Tôm Thẻ`.  
 `Rô Phi` is currently an internal/default profile and is not included as a direct discovery option.
 You can still set `Rô Phi` manually by publishing directly to `smartfarm/aquaculture/config/species/set`.
+`smartfarm/aquaculture/config/species/state` echoes the selected label, not the resolved internal profile name; fallback-to-`Rô Phi` behavior is inferred from mapping rules above.
 
 ## 4) Add dashboard card
 

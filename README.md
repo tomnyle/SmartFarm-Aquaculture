@@ -8,7 +8,7 @@ ESP32 firmware for aquaculture pond monitoring and control with MQTT and Home As
 - Exposes relay outputs (pump, aerator, circulation, feeder) via MQTT
 - Auto-registers Home Assistant entities through MQTT Discovery
 - Runs a species-based AUTO rule engine for water quality control
-- Supports mode selection: `AUTO`, `MANUAL`, `SCHEDULE`, `SAFE`
+- Supports mode selection: `AUTO`, `MANUAL`, `SCHEDULE`, `SAFE` (`SCHEDULE`/`SAFE` are exposed via MQTT/HA selector; dedicated runtime handlers are not yet implemented in `main.cpp`)
 
 ## Current sensors and outputs
 
