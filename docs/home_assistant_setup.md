@@ -48,18 +48,11 @@ Expected entities:
 
 Current `select.aquaculture_species` options published by firmware discovery:
 
-- `Koi`
-- `Cá Trắm`
-- `Cá Chép`
-- `Cá Tra`
-- `Cá Lóc`
-- `Tôm Thẻ`
-- `Tôm Sú`
-- `Tilapia`
+- Dedicated mapped profiles: `Cá Chép`, `Cá Tra`, `Tôm Thẻ`
+- Fallback-to-`Rô Phi` aliases: `Koi`, `Cá Trắm`, `Cá Lóc`, `Tôm Sú`, `Tilapia`
 
 Rule-engine profile mapping currently supports: `Cá Chép`, `Rô Phi`, `Cá Tra`, `Tôm Thẻ`.  
-`Rô Phi` is currently an internal/default profile and is not included in the discovery select options list above.  
-Other selected labels currently fall back to `Rô Phi` thresholds.
+`Rô Phi` is currently an internal/default profile and is not included as a direct discovery option.
 
 ## 4) Add dashboard card
 
