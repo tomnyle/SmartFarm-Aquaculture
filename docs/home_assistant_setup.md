@@ -12,20 +12,9 @@
 2. Add **MQTT** and set broker host/port/credentials.
 3. Keep discovery enabled (default prefix `homeassistant`).
 
-## 2) Optional legacy/manual configuration
+> Note: broker host/credentials for MQTT integration should be configured in the Home Assistant UI, not in `configuration.yaml` for current Home Assistant versions.
 
-Use this only if your Home Assistant setup still manages MQTT in `configuration.yaml`:
-
-```yaml
-mqtt:
-  broker: <BROKER_IP>
-  username: <MQTT_USER>
-  password: <MQTT_PASSWORD>
-  discovery: true
-  discovery_prefix: homeassistant
-```
-
-## 3) Flash and boot ESP32
+## 2) Flash and boot ESP32
 
 After MQTT connection, firmware publishes retained discovery payloads to:
 
@@ -33,7 +22,7 @@ After MQTT connection, firmware publishes retained discovery payloads to:
 - `homeassistant/switch/.../config`
 - `homeassistant/select/.../config`
 
-## 4) Verify discovered entities
+## 3) Verify discovered entities
 
 Expected entities:
 
@@ -57,7 +46,7 @@ Expected entities:
 - `select.aquaculture_mode`
 - `select.aquaculture_species`
 
-## 5) Add dashboard card
+## 4) Add dashboard card
 
 ```yaml
 type: entities
@@ -80,7 +69,7 @@ entities:
   - switch.aquaculture_feeder
 ```
 
-## 6) Validate topic flow
+## 5) Validate topic flow
 
 Subscribe:
 
