@@ -857,7 +857,7 @@ void update_ph_trend(float current_ph, uint32_t sample_time_ms) {
     return;
   }
 
-  if (last_ph_sample_ms != 0 && sample_time_ms > last_ph_sample_ms) {
+  if (last_ph_sample_ms != 0) {
     uint32_t elapsed = sample_time_ms - last_ph_sample_ms;
     if (elapsed >= PH_TREND_MIN_INTERVAL_MS) {
       ph_trend_per_hour = ((current_ph - last_ph_sample) * 3600000.0f) / static_cast<float>(elapsed);

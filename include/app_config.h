@@ -34,7 +34,7 @@
 // ==================== BENCH / V2 HARDWARE COMPATIBILITY ====================
 // Enable bench mode while sensors/relays are not fully connected. Set to false on
 // real hardware to restore full fail-safe behavior from real sensor readings.
-#define BENCH_TEST_MODE true
+#define BENCH_TEST_MODE false
 #define BENCH_DEFAULT_WATER_TEMP 27.0f
 #define BENCH_DEFAULT_PH 7.20f
 #define BENCH_DEFAULT_DO 6.50f
