@@ -4,9 +4,10 @@
 #include <Arduino.h>
 
 // Firmware Version
-#define FW_VERSION "0.2.0"
+#define FW_VERSION "2.0.0"
 #define FW_BUILD_DATE __DATE__
-#define FW_DEVICE_ID "ESP32_AQUACULTURE_001"
+#define FW_DEVICE_ID "ESP32_AQUACULTURE_V2"
+#define FW_HW_VERSION "ESP32DEV"
 
 // ==================== WIFI CONFIGURATION ====================
 #define WIFI_SSID "Le Danh"
@@ -29,24 +30,34 @@
 // Sensor Topics - State
 #define MQTT_TOPIC_WATER_TEMP "smartfarm/aquaculture/sensor/water_temp"
 #define MQTT_TOPIC_PH "smartfarm/aquaculture/sensor/ph"
+#define MQTT_TOPIC_PH_TREND "smartfarm/aquaculture/sensor/ph_trend"
 #define MQTT_TOPIC_TURBIDITY "smartfarm/aquaculture/sensor/turbidity"
 #define MQTT_TOPIC_DO "smartfarm/aquaculture/sensor/do"
 #define MQTT_TOPIC_CO2 "smartfarm/aquaculture/sensor/co2"
 #define MQTT_TOPIC_AIR_TEMP "smartfarm/aquaculture/sensor/air_temp"
 #define MQTT_TOPIC_HUMIDITY "smartfarm/aquaculture/sensor/humidity"
 #define MQTT_TOPIC_LIGHT "smartfarm/aquaculture/sensor/light"
+#define MQTT_TOPIC_WATER_LEVEL "smartfarm/aquaculture/sensor/water_level"
+#define MQTT_TOPIC_AERATOR_CURRENT "smartfarm/aquaculture/sensor/aerator_current"
+#define MQTT_TOPIC_PUMP_CURRENT "smartfarm/aquaculture/sensor/pump_current"
 
 // Output Topics - State
 #define MQTT_TOPIC_PUMP "smartfarm/aquaculture/output/pump"
 #define MQTT_TOPIC_AERATOR "smartfarm/aquaculture/output/aerator"
+#define MQTT_TOPIC_AERATOR_1 "smartfarm/aquaculture/output/aerator_1"
+#define MQTT_TOPIC_AERATOR_2 "smartfarm/aquaculture/output/aerator_2"
 #define MQTT_TOPIC_CIRCULATION "smartfarm/aquaculture/output/circulation"
 #define MQTT_TOPIC_FEEDER "smartfarm/aquaculture/output/feeder"
+#define MQTT_TOPIC_ALARM_OUTPUT "smartfarm/aquaculture/output/alarm"
 
 // Control Topics - Command
 #define MQTT_TOPIC_CONTROL_PUMP "smartfarm/aquaculture/control/pump/set"
 #define MQTT_TOPIC_CONTROL_AERATOR "smartfarm/aquaculture/control/aerator/set"
+#define MQTT_TOPIC_CONTROL_AERATOR_1 "smartfarm/aquaculture/control/aerator_1/set"
+#define MQTT_TOPIC_CONTROL_AERATOR_2 "smartfarm/aquaculture/control/aerator_2/set"
 #define MQTT_TOPIC_CONTROL_CIRCULATION "smartfarm/aquaculture/control/circulation/set"
 #define MQTT_TOPIC_CONTROL_FEEDER "smartfarm/aquaculture/control/feeder/set"
+#define MQTT_TOPIC_CONTROL_ALARM_OUTPUT "smartfarm/aquaculture/control/alarm/set"
 #define MQTT_TOPIC_CONTROL_MODE "smartfarm/aquaculture/config/mode/set"
 #define MQTT_TOPIC_CONFIG_SPECIES "smartfarm/aquaculture/config/species/set"
 
@@ -57,10 +68,32 @@
 // Status Topic
 #define MQTT_TOPIC_STATUS "smartfarm/aquaculture/status"
 #define MQTT_TOPIC_STATE "smartfarm/aquaculture/controller/state"
+#define MQTT_TOPIC_SAFETY_STATE "smartfarm/aquaculture/safety/state"
+#define MQTT_TOPIC_ALARM_TEXT "smartfarm/aquaculture/alarm/text"
+#define MQTT_TOPIC_ALARM_ACTIVE "smartfarm/aquaculture/alarm/active"
+#define MQTT_TOPIC_SAFETY_ACTIVE "smartfarm/aquaculture/safety/active"
+#define MQTT_TOPIC_EMERGENCY_ACTIVE "smartfarm/aquaculture/emergency/active"
+#define MQTT_TOPIC_CONTROLLER_STATUS "smartfarm/aquaculture/controller/status"
+
+// Availability Topics
+#define MQTT_TOPIC_AVAILABILITY "smartfarm/aquaculture/availability"
+#define MQTT_TOPIC_AVAILABILITY_CO2 "smartfarm/aquaculture/availability/co2"
+#define MQTT_TOPIC_AVAILABILITY_LIGHT "smartfarm/aquaculture/availability/light"
+#define MQTT_TOPIC_AVAILABILITY_WATER_LEVEL "smartfarm/aquaculture/availability/water_level"
+#define MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT "smartfarm/aquaculture/availability/aerator_current"
+#define MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT "smartfarm/aquaculture/availability/pump_current"
+#define MQTT_TOPIC_AVAILABILITY_AERATOR_2 "smartfarm/aquaculture/availability/aerator_2"
+#define MQTT_TOPIC_AVAILABILITY_ALARM_OUTPUT "smartfarm/aquaculture/availability/alarm_output"
 
 // ==================== DEVICE CONFIGURATION ====================
 #define DEVICE_NAME "Aquaculture-Controller-001"
 #define DEVICE_LOCATION "Home Pond"
+
+// ==================== HOME ASSISTANT DEVICE METADATA ====================
+#define DEVICE_DISPLAY_NAME "Aquaculture Controller V2"
+#define DEVICE_MANUFACTURER "SmartFarm"
+#define DEVICE_MODEL "ESP32 Aquaculture Controller"
+#define DEVICE_CONFIG_URL "http://192.168.100.168:8123"
 
 // ==================== SENSOR READ INTERVALS ====================
 #define SENSOR_READ_INTERVAL 5000      // 5 seconds
@@ -81,6 +114,29 @@
 
 // ==================== DEFAULT MODE ====================
 #define DEFAULT_MODE "AUTO"  // AUTO, MANUAL, SCHEDULE, SAFE
+
+// ==================== SENSOR/OUTPUT FEATURE FLAGS ====================
+#define CO2_SENSOR_ENABLED false
+#define WATER_LEVEL_SENSOR_ENABLED false
+#define AERATOR_CURRENT_SENSOR_ENABLED false
+#define PUMP_CURRENT_SENSOR_ENABLED false
+#define AERATOR_2_HARDWARE_AVAILABLE false
+#define ALARM_OUTPUT_HARDWARE_AVAILABLE false
+
+// ==================== BENCH MODE ====================
+#define BENCH_TEST_MODE true
+#define BENCH_DEFAULT_WATER_TEMP 27.0f
+#define BENCH_DEFAULT_PH 7.20f
+#define BENCH_DEFAULT_PH_TREND 0.00f
+#define BENCH_DEFAULT_DO 6.50f
+#define BENCH_DEFAULT_CO2 0.00f
+#define BENCH_DEFAULT_TURBIDITY 0.00f
+#define BENCH_DEFAULT_AIR_TEMP 28.0f
+#define BENCH_DEFAULT_AIR_HUMIDITY 65.0f
+#define BENCH_DEFAULT_LIGHT 0.0f
+#define BENCH_DEFAULT_WATER_LEVEL 70.0f
+#define BENCH_DEFAULT_AERATOR_CURRENT 0.00f
+#define BENCH_DEFAULT_PUMP_CURRENT 0.00f
 
 // ==================== CONTROL THRESHOLDS ====================
 // Temperature (°C)
