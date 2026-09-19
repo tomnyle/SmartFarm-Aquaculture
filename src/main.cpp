@@ -818,9 +818,25 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(message);
 
   bool requested_on = message.equalsIgnoreCase("ON");
+  bool is_output_command =
+    strcmp(topic, MQTT_TOPIC_CONTROL_PUMP) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_AERATOR) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_AERATOR_1) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_AERATOR_2) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_CIRCULATION) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_FEEDER) == 0 ||
+    strcmp(topic, MQTT_TOPIC_CONTROL_ALARM_OUTPUT) == 0;
+
+  if (is_output_command && strcmp(current_mode, "MANUAL") != 0) {
+    strncpy(current_mode, "MANUAL", sizeof(current_mode) - 1);
+    current_mode[sizeof(current_mode) - 1] = '\0';
+    update_system_status_flags();
+    mqtt_client.publish(MQTT_TOPIC_MODE_STATE, current_mode, true);
+    mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+    publish_runtime_status_topics();
+  }
 
   if (strcmp(topic, MQTT_TOPIC_CONTROL_PUMP) == 0) {
-    strcpy(current_mode, "MANUAL");
     set_output("pump", requested_on);
     mqtt_client.publish(MQTT_TOPIC_PUMP, outputs.pump ? "ON" : "OFF", true);
   }
