@@ -154,9 +154,9 @@ smartfarm/aquaculture/output/circulation   → Circulation ON/OFF
 smartfarm/aquaculture/output/feeder        → Feeder ON/OFF
 smartfarm/aquaculture/output/alarm         → Alarm output ON/OFF
 
-smartfarm/aquaculture/config/species/state  (MQTT_TOPIC_SPECIES_STATE)
-smartfarm/aquaculture/config/mode/state     (MQTT_TOPIC_MODE_STATE)
-smartfarm/aquaculture/controller/state      (MQTT_TOPIC_STATE)
+smartfarm/aquaculture/config/species/state  → Current species state
+smartfarm/aquaculture/config/mode/state     → Current mode state
+smartfarm/aquaculture/controller/state      → Controller mode mirror
 ```
 
 ### Subscribe FROM Home Assistant TO ESP32
