@@ -922,6 +922,20 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
+void publish_runtime_status_topics() {
+  if (!mqtt_client.connected()) {
+    return;
+  }
+
+  mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+  mqtt_client.publish(MQTT_TOPIC_CONTROLLER_STATUS, controller_status, true);
+  mqtt_client.publish(MQTT_TOPIC_SAFETY_STATE, safety_state, true);
+  mqtt_client.publish(MQTT_TOPIC_ALARM_TEXT, alarm_text, true);
+  mqtt_client.publish(MQTT_TOPIC_ALARM_ACTIVE, alarm_active ? "ON" : "OFF", true);
+  mqtt_client.publish(MQTT_TOPIC_SAFETY_ACTIVE, safety_active ? "ON" : "OFF", true);
+  mqtt_client.publish(MQTT_TOPIC_EMERGENCY_ACTIVE, emergency_active ? "ON" : "OFF", true);
+}
+
 void update_system_status_flags() {
   const SpeciesRule* rule = getSpeciesRule(current_species);
 
@@ -949,20 +963,6 @@ void update_system_status_flags() {
     snprintf(alarm_text, sizeof(alarm_text), "No alarms");
   }
 
-  void publish_runtime_status_topics() {
-    if (!mqtt_client.connected()) {
-      return;
-    }
-
-    mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
-    mqtt_client.publish(MQTT_TOPIC_CONTROLLER_STATUS, controller_status, true);
-    mqtt_client.publish(MQTT_TOPIC_SAFETY_STATE, safety_state, true);
-    mqtt_client.publish(MQTT_TOPIC_ALARM_TEXT, alarm_text, true);
-    mqtt_client.publish(MQTT_TOPIC_ALARM_ACTIVE, alarm_active ? "ON" : "OFF", true);
-    mqtt_client.publish(MQTT_TOPIC_SAFETY_ACTIVE, safety_active ? "ON" : "OFF", true);
-    mqtt_client.publish(MQTT_TOPIC_EMERGENCY_ACTIVE, emergency_active ? "ON" : "OFF", true);
-  }
-
   if (!mqtt_connection_attempted && !mqtt_connected_once) {
     snprintf(controller_status, sizeof(controller_status), "INITIALIZING");
   } else if (mqtt_client.connected()) {
@@ -970,6 +970,8 @@ void update_system_status_flags() {
   } else {
     snprintf(controller_status, sizeof(controller_status), "DISCONNECTED");
   }
+
+  publish_runtime_status_topics();
 }
 
 // ==================== READ SENSORS ====================
