@@ -1,130 +1,99 @@
-# SmartFarm Aquaculture Controller V0.1
+# SmartFarm Aquaculture Controller V1
 
-ESP32-based aquaculture controller for family pond management with MQTT & Home Assistant integration.
+ESP32-based SmartAquaculture controller for a family pond around **200 m²**, designed to keep the pond safe even when Wi-Fi, MQTT, or Home Assistant are unavailable.
 
-## Features
+## V1 goals
 
-- **Autonomous Control**: Works independently even without Home Assistant
-- **Multi-Species Support**: Profiles for Koi, Catfish, Shrimp, Tilapia, and more
-- **4 Operating Modes**: AUTO, MANUAL, SCHEDULE, SAFE
-- **Core Sensors**:
-  - Water Temperature (DS18B20)
-  - pH Level (via ADS1115)
-  - Dissolved Oxygen (via ADS1115)
-  - Water Level
+- Put **dissolved oxygen (DO)** at the center of control decisions.
+- Keep a **local fail-safe rule engine** on the ESP32.
+- Support **AUTO / MANUAL / SCHEDULE / SAFE / EMERGENCY** operating modes.
+- Detect **sensor faults / stale data**, enforce **water-level protection**, and lock feeding when water quality is unsafe.
+- Publish structured state to **MQTT** and expose entities through **Home Assistant discovery**.
 
-- **Relay Control** (8-channel):
-  - Aerator (Máy sục khí)
-  - Water Pump (Bơm cấp nước)
-  - Circulation Pump (Bơm tuần hoàn)
-  - Feeder (Máy cho ăn)
-  - Valve (Van)
-  - Light (Đèn)
-  - 2x Spare
+## 5-layer architecture
 
-## Hardware Requirements
+1. **Sensors** – DO, pH, water temperature, water level, turbidity, CO2, air temp/humidity, light, current hooks.
+2. **Control** – aerator 1, aerator 2, pump, circulation, feeder, alarm.
+3. **Safety** – stale/invalid sensor detection, DO-first protection, pump timeout, feeder lock, current-fault hooks.
+4. **MQTT / Home Assistant** – telemetry, commands, discovery, alarm events, heartbeat.
+5. **Data logging** – MQTT retention, Home Assistant recorder, optional InfluxDB / Grafana.
 
-- ESP32 DevKitC V4 / ESP-WROOM-32
-- DS18B20 Temperature Sensor
-- pH Electrode + ADS1115 ADC Module
-- Dissolved Oxygen Probe + ADS1115
-- Water Level Sensor
-- 8-Channel Relay Module
-- 5V Power Supply
+## V1 feature list
 
-## Getting Started
+- Local DO-driven aeration policy with warning / low / critical / emergency thresholds.
+- Local SAFE / EMERGENCY override even if MQTT is down.
+- Water-level low / critical handling with pump timeout protection.
+- pH warning by **range** and **rate-of-change**.
+- Temperature-critical feeder lock and forced aeration.
+- Manual mode timeout and safety interlock protection.
+- Home Assistant discovery for key sensors, outputs, mode, and alarm state.
+- Alarm, sensor-fault, and device-fault MQTT events.
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/tomnyle/SmartFarm-Aquaculture.git
-cd SmartFarm-Aquaculture
-```
+## V2 roadmap
 
-### 2. Configure
-Edit `include/app_config.h`:
-- WiFi SSID & Password
-- MQTT Broker Address
-- Device Name & Location
+Planned upgrades after V1 is stable in the pond:
 
-### 3. Build & Upload
-```bash
-platformio run -e esp32dev -t upload
-```
+- ORP
+- NH3/NH4 and NO2 online sensing
+- Camera integration via Home Assistant
+- InfluxDB / Grafana dashboards
+- Feed history, biomass estimate, FCR tracking
+- Split architecture: Sensor Node + Control Node
 
-### 4. Monitor Serial Output
-```bash
-platformio device monitor -b 115200
-```
+## Quick start
 
-## System Architecture
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/tomnyle/SmartFarm-Aquaculture.git
+   cd SmartFarm-Aquaculture
+   ```
+2. **Edit `/home/runner/work/SmartFarm-Aquaculture/SmartFarm-Aquaculture/include/app_config.h`**
+   - Set `WIFI_SSID` / `WIFI_PASSWORD`
+   - Set `MQTT_BROKER` / `MQTT_USER` / `MQTT_PASSWORD`
+   - Review pond-safe thresholds before deployment
+3. **Build firmware**
+   ```bash
+   platformio run -e esp32dev
+   ```
+4. **Upload firmware**
+   ```bash
+   platformio run -e esp32dev -t upload
+   ```
+5. **Open the serial monitor**
+   ```bash
+   platformio device monitor -b 115200
+   ```
+6. **Enable MQTT discovery in Home Assistant**, then review the dashboard example in `docs/home-assistant-dashboard.yaml`.
 
-```
-         Home Assistant
-              │
-             MQTT
-              │
-      Aquaculture ESP32
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-Sensors  Rule Engine  Outputs
-    │         │         │
-    └─────────┼─────────┘
-         Local Controller
-```
+## Safe defaults
 
-## Operating Modes
+- **DO sensor fault or stale data** → SAFE behavior, feeder lock, alarm, at least one aerator ON.
+- **DO critical / emergency** → both aerators ON, feeder locked, alarm event published.
+- **Water level critical** → pump protected, feeder locked, alarm ON.
+- **Temperature critical** → feeder locked, forced aeration.
+- **Feeder runtime limit** and **pump runtime timeout** are enforced locally.
 
-### AUTO Mode
-ESP32 automatically controls relays based on sensor readings and active profile thresholds.
+## Repository layout
 
-### MANUAL Mode
-Control relays directly from Home Assistant.
+- `src/main.cpp` – active V1 firmware loop, rule engine, MQTT, Home Assistant discovery.
+- `include/app_config.h` – credentials placeholders, MQTT topics, safety thresholds, runtime constants.
+- `include/pins.h` – GPIO map for sensors, relays, alarm, and current hooks.
+- `include/aquaculture_logic.h` – control mode, safety level, sensor/output state structures.
+- `include/species_rules.h` – basic species-specific advisory limits.
+- `docs/architecture.md` – V1 and future 2-node architecture.
+- `docs/sensors.md` – sensor roles, calibration, and V1/V2 sensing strategy.
+- `docs/wiring.md` – wiring map and electrical safety guidance.
+- `docs/mqtt.md` – MQTT topic specification and payload examples.
+- `docs/home-assistant-dashboard.yaml` – example Lovelace dashboard.
+- `docs/operation-checklist.md` – daily/weekly/monthly and emergency operations.
 
-### SCHEDULE Mode
-Execute predefined schedules (e.g., feeding times).
+## Electrical safety warnings
 
-### SAFE Mode
-Activated when critical errors detected:
-- Sensor failures
-- Water level too low
-- Temperature critical
-- DO critical
+- **Do not switch aerators, pumps, or feeders directly from the ESP32 GPIO pins.** Use proper relay modules, contactors, drivers, or SSRs rated for the real load.
+- Protect outdoor pond circuits with **RCCB/GFCI**, surge protection, waterproof enclosures, and correct earthing.
+- Keep low-voltage logic wiring separated from mains wiring.
+- Add manual disconnects and test emergency shutdown procedures before stocking the pond.
 
-## Profiles
+## Documentation index
 
-Each species has predefined parameter ranges:
-
-```json
-{
-  "name": "shrimp",
-  "temperature": { "min": 28, "max": 32 },
-  "ph": { "min": 7.5, "max": 8.5 },
-  "do": { "min": 5.0 }
-}
-```
-
-## MQTT Topics
-
-- `smartfarm/aquaculture/state` - System state (publish)
-- `smartfarm/aquaculture/sensor` - Sensor readings (publish)
-- `smartfarm/aquaculture/output` - Output status (publish)
-- `smartfarm/aquaculture/control` - Control commands (subscribe)
-- `smartfarm/aquaculture/config` - Configuration (subscribe)
-- `smartfarm/aquaculture/status` - Device status (publish)
-
-## Documentation
-
-See `/docs` folder for:
-- `architecture.md` - System design
-- `sensors.md` - Sensor specifications & calibration
-- `wiring.md` - Hardware wiring diagram
-- `mqtt.md` - MQTT protocol details
-
-## License
-
-MIT License - See LICENSE file
-
-## Author
-
-Tom Nyle (tomnyle) - 2026
+See the `/docs` directory for architecture, wiring, MQTT, sensor deployment, dashboard, and operating checklists.
