@@ -129,15 +129,30 @@ entities:
 
 ### Publish FROM ESP32 TO Home Assistant
 ```
-smartfarm/aquaculture/sensor/temperature  → Temperature value
-smartfarm/aquaculture/sensor/ph            → pH value  
-smartfarm/aquaculture/sensor/do            → DO value
-smartfarm/aquaculture/sensor/level         → Water level %
+smartfarm/aquaculture/sensor/water_temp       → Water temperature
+smartfarm/aquaculture/sensor/ph               → pH value
+smartfarm/aquaculture/sensor/ph_trend         → pH trend
+smartfarm/aquaculture/sensor/do               → DO value
+smartfarm/aquaculture/sensor/water_level      → Water level %
+smartfarm/aquaculture/sensor/turbidity        → Turbidity
+smartfarm/aquaculture/sensor/air_temp         → Air temperature
+smartfarm/aquaculture/sensor/humidity         → Humidity
+smartfarm/aquaculture/sensor/light            → Light
+smartfarm/aquaculture/sensor/co2              → CO2 (disabled by default in V2)
+smartfarm/aquaculture/sensor/aerator_current  → Aerator current
+smartfarm/aquaculture/sensor/pump_current     → Pump current
+smartfarm/aquaculture/controller/state        → Controller mode/state
+smartfarm/aquaculture/controller/status       → Controller status text
+smartfarm/aquaculture/safety/state            → Safety state text
+smartfarm/aquaculture/alarm/text              → Alarm text
 
 smartfarm/aquaculture/output/aerator       → Aerator ON/OFF
-smartfarm/aquaculture/output/water_pump    → Pump ON/OFF
+smartfarm/aquaculture/output/aerator_1     → Aerator 1 ON/OFF (same hardware as aerator)
+smartfarm/aquaculture/output/aerator_2     → Aerator 2 ON/OFF (unavailable if hardware absent)
+smartfarm/aquaculture/output/pump          → Pump ON/OFF
 smartfarm/aquaculture/output/circulation   → Circulation ON/OFF
 smartfarm/aquaculture/output/feeder        → Feeder ON/OFF
+smartfarm/aquaculture/output/alarm         → Alarm output ON/OFF
 
 smartfarm/aquaculture/config/species       → Current species
 smartfarm/aquaculture/config/mode          → Current mode (AUTO/MANUAL/etc)
@@ -146,9 +161,12 @@ smartfarm/aquaculture/config/mode          → Current mode (AUTO/MANUAL/etc)
 ### Subscribe FROM Home Assistant TO ESP32
 ```
 smartfarm/aquaculture/control/aerator/set        ← Control aerator
-smartfarm/aquaculture/control/water_pump/set     ← Control pump
+smartfarm/aquaculture/control/aerator_1/set      ← Control aerator 1
+smartfarm/aquaculture/control/aerator_2/set      ← Control aerator 2 (ignored if hardware absent)
+smartfarm/aquaculture/control/pump/set           ← Control pump
 smartfarm/aquaculture/control/circulation/set    ← Control circulation
 smartfarm/aquaculture/control/feeder/set         ← Control feeder
+smartfarm/aquaculture/control/alarm/set          ← Control alarm output (ignored if hardware absent)
 
 smartfarm/aquaculture/config/species/set         ← Change species
 smartfarm/aquaculture/config/mode/set            ← Change mode
@@ -182,6 +200,47 @@ mosquitto_pub -h 192.168.1.100 -u user -P pass -t 'smartfarm/aquaculture/control
 3. Check ESP32 serial monitor for MQTT connection logs
 4. Restart Home Assistant: Settings → System → Restart
 
+### Still seeing old V1 entities?
+
+V2 uses device metadata and unique IDs prefixed with `aquaculture_v2_...`.
+If Home Assistant still shows old V1 retained entities, only clear Aquaculture discovery topics:
+
+```bash
+for topic in \
+  homeassistant/sensor/aquaculture_water_temp/config \
+  homeassistant/sensor/aquaculture_ph/config \
+  homeassistant/sensor/aquaculture_ph_trend/config \
+  homeassistant/sensor/aquaculture_do/config \
+  homeassistant/sensor/aquaculture_water_level/config \
+  homeassistant/sensor/aquaculture_turbidity/config \
+  homeassistant/sensor/aquaculture_air_temp/config \
+  homeassistant/sensor/aquaculture_humidity/config \
+  homeassistant/sensor/aquaculture_light/config \
+  homeassistant/sensor/aquaculture_co2/config \
+  homeassistant/sensor/aquaculture_aerator_current/config \
+  homeassistant/sensor/aquaculture_pump_current/config \
+  homeassistant/sensor/aquaculture_controller_state/config \
+  homeassistant/sensor/aquaculture_controller_status/config \
+  homeassistant/sensor/aquaculture_safety_state/config \
+  homeassistant/sensor/aquaculture_alarm_text/config \
+  homeassistant/binary_sensor/aquaculture_alarm_active/config \
+  homeassistant/binary_sensor/aquaculture_safety_active/config \
+  homeassistant/binary_sensor/aquaculture_emergency_active/config \
+  homeassistant/switch/aquaculture_pump/config \
+  homeassistant/switch/aquaculture_aerator/config \
+  homeassistant/switch/aquaculture_aerator_1/config \
+  homeassistant/switch/aquaculture_aerator_2/config \
+  homeassistant/switch/aquaculture_circulation/config \
+  homeassistant/switch/aquaculture_feeder/config \
+  homeassistant/switch/aquaculture_alarm_output/config \
+  homeassistant/select/aquaculture_mode/config \
+  homeassistant/select/aquaculture_species/config; do
+  mosquitto_pub -h <broker> -u <user> -P <password> -t "$topic" -r -n
+done
+```
+
+Then reboot ESP32 so discovery for **Aquaculture Controller V2** is republished.
+
 ### Slow updates?
 1. Reduce `mqtt_update_interval` in `app_config.h` (default: 60s)
 2. Check WiFi signal strength
@@ -191,6 +250,7 @@ mosquitto_pub -h 192.168.1.100 -u user -P pass -t 'smartfarm/aquaculture/control
 1. Verify ESP32 is in MANUAL or SCHEDULE mode (not SAFE)
 2. Check MQTT subscriptions are active
 3. Look at serial monitor for incoming messages
+4. If `BENCH_TEST_MODE=true`, all relay ON commands are intentionally suppressed and state stays OFF
 
 ## Advanced: Automations
 
