@@ -74,6 +74,8 @@ bool light_sensor_available = false;
 bool alarm_active = false;
 bool safety_active = false;
 bool emergency_active = false;
+bool mqtt_connection_attempted = false;
+bool mqtt_connected_once = false;
 
 // ==================== FORWARD DECLARATIONS ====================
 void setup_wifi();
@@ -390,6 +392,7 @@ void reconnect_mqtt() {
 
   Serial.print("[MQTT] Connecting to: ");
   Serial.println(MQTT_BROKER);
+  mqtt_connection_attempted = true;
 
   if (mqtt_client.connect(
         mqtt_runtime_client_id,
@@ -401,10 +404,14 @@ void reconnect_mqtt() {
         "offline"
       )) {
     Serial.println("[OK] MQTT Connected!");
+    mqtt_connected_once = true;
 
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY, "online", true);
     mqtt_client.publish(MQTT_TOPIC_STATUS, "online", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_CO2, CO2_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_WATER_LEVEL, WATER_LEVEL_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT, AERATOR_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT, PUMP_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_2, AERATOR_2_HARDWARE_AVAILABLE ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_ALARM_OUTPUT, ALARM_OUTPUT_HARDWARE_AVAILABLE ? "online" : "offline", true);
 
@@ -487,7 +494,8 @@ void publish_mqtt_discovery() {
     "mdi:water-percent",
     "",
     "measurement",
-    MQTT_TOPIC_AVAILABILITY
+    MQTT_TOPIC_AVAILABILITY_WATER_LEVEL,
+    WATER_LEVEL_SENSOR_ENABLED
   );
 
   publish_sensor_discovery(
@@ -554,7 +562,8 @@ void publish_mqtt_discovery() {
     "mdi:current-ac",
     "current",
     "measurement",
-    MQTT_TOPIC_AVAILABILITY
+    MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT,
+    AERATOR_CURRENT_SENSOR_ENABLED
   );
 
   publish_sensor_discovery(
@@ -565,7 +574,8 @@ void publish_mqtt_discovery() {
     "mdi:current-ac",
     "current",
     "measurement",
-    MQTT_TOPIC_AVAILABILITY
+    MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT,
+    PUMP_CURRENT_SENSOR_ENABLED
   );
 
   publish_sensor_discovery(
@@ -899,7 +909,9 @@ void update_system_status_flags() {
     snprintf(alarm_text, sizeof(alarm_text), "No alarms");
   }
 
-  if (mqtt_client.connected()) {
+  if (!mqtt_connection_attempted && !mqtt_connected_once) {
+    snprintf(controller_status, sizeof(controller_status), "INITIALIZING");
+  } else if (mqtt_client.connected()) {
     snprintf(controller_status, sizeof(controller_status), "RUNNING");
   } else {
     snprintf(controller_status, sizeof(controller_status), "DISCONNECTED");

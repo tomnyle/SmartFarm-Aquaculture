@@ -78,6 +78,9 @@
 // Availability Topics
 #define MQTT_TOPIC_AVAILABILITY "smartfarm/aquaculture/availability"
 #define MQTT_TOPIC_AVAILABILITY_CO2 "smartfarm/aquaculture/availability/co2"
+#define MQTT_TOPIC_AVAILABILITY_WATER_LEVEL "smartfarm/aquaculture/availability/water_level"
+#define MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT "smartfarm/aquaculture/availability/aerator_current"
+#define MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT "smartfarm/aquaculture/availability/pump_current"
 #define MQTT_TOPIC_AVAILABILITY_AERATOR_2 "smartfarm/aquaculture/availability/aerator_2"
 #define MQTT_TOPIC_AVAILABILITY_ALARM_OUTPUT "smartfarm/aquaculture/availability/alarm_output"
 
@@ -113,9 +116,9 @@
 
 // ==================== SENSOR/OUTPUT FEATURE FLAGS ====================
 #define CO2_SENSOR_ENABLED false
-#define WATER_LEVEL_SENSOR_ENABLED true
-#define AERATOR_CURRENT_SENSOR_ENABLED true
-#define PUMP_CURRENT_SENSOR_ENABLED true
+#define WATER_LEVEL_SENSOR_ENABLED false
+#define AERATOR_CURRENT_SENSOR_ENABLED false
+#define PUMP_CURRENT_SENSOR_ENABLED false
 #define AERATOR_2_HARDWARE_AVAILABLE false
 #define ALARM_OUTPUT_HARDWARE_AVAILABLE false
 
