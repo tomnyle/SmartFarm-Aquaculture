@@ -54,6 +54,8 @@ uint32_t last_feeder_change = 0;
 float ph_trend_per_hour = 0.0f;
 float last_ph_sample = NAN;
 uint32_t last_ph_sample_ms = 0;
+float ph_trend_reference = NAN;
+uint32_t ph_trend_reference_ms = 0;
 
 char current_mode[16] = "";
 char current_species[32] = "Rô Phi";
@@ -857,19 +859,21 @@ void update_ph_trend(float current_ph, uint32_t sample_time_ms) {
     return;
   }
 
-  if (last_ph_sample_ms != 0) {
-    uint32_t elapsed = sample_time_ms - last_ph_sample_ms;
+  if (ph_trend_reference_ms != 0) {
+    uint32_t elapsed = sample_time_ms - ph_trend_reference_ms;
     if (elapsed >= PH_TREND_MIN_INTERVAL_MS) {
-      ph_trend_per_hour = ((current_ph - last_ph_sample) * 3600000.0f) / static_cast<float>(elapsed);
-      last_ph_sample = current_ph;
-      last_ph_sample_ms = sample_time_ms;
+      ph_trend_per_hour = ((current_ph - ph_trend_reference) * 3600000.0f) / static_cast<float>(elapsed);
+      ph_trend_reference = current_ph;
+      ph_trend_reference_ms = sample_time_ms;
     }
-    return;
+  } else {
+    ph_trend_per_hour = 0.0f;
+    ph_trend_reference = current_ph;
+    ph_trend_reference_ms = sample_time_ms;
   }
 
   last_ph_sample = current_ph;
   last_ph_sample_ms = sample_time_ms;
-  ph_trend_per_hour = 0.0f;
 }
 
 bool publish_float_topic(const char* topic, float value, uint8_t decimals) {
