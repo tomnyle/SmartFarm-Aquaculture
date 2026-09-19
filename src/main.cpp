@@ -257,15 +257,15 @@ bool is_supported_species(const char* species) {
 }
 
 bool has_water_level_runtime_data() {
-  return WATER_LEVEL_SENSOR_ENABLED && BENCH_TEST_MODE;
+  return WATER_LEVEL_SENSOR_ENABLED;
 }
 
 bool has_aerator_current_runtime_data() {
-  return AERATOR_CURRENT_SENSOR_ENABLED && BENCH_TEST_MODE;
+  return AERATOR_CURRENT_SENSOR_ENABLED;
 }
 
 bool has_pump_current_runtime_data() {
-  return PUMP_CURRENT_SENSOR_ENABLED && BENCH_TEST_MODE;
+  return PUMP_CURRENT_SENSOR_ENABLED;
 }
 
 // ==================== SETUP ====================
