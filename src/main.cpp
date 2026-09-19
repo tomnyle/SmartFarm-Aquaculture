@@ -92,6 +92,9 @@ void update_system_status_flags();
 bool is_supported_mode(const char* mode);
 bool is_supported_species(const char* species);
 void publish_runtime_status_topics();
+bool has_water_level_runtime_data();
+bool has_aerator_current_runtime_data();
+bool has_pump_current_runtime_data();
 
 void initialize_device_identity() {
   uint64_t chip_id = ESP.getEfuseMac();
@@ -253,6 +256,18 @@ bool is_supported_species(const char* species) {
     strcmp(species, "Tilapia") == 0;
 }
 
+bool has_water_level_runtime_data() {
+  return WATER_LEVEL_SENSOR_ENABLED && BENCH_TEST_MODE;
+}
+
+bool has_aerator_current_runtime_data() {
+  return AERATOR_CURRENT_SENSOR_ENABLED && BENCH_TEST_MODE;
+}
+
+bool has_pump_current_runtime_data() {
+  return PUMP_CURRENT_SENSOR_ENABLED && BENCH_TEST_MODE;
+}
+
 // ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
@@ -412,9 +427,9 @@ void reconnect_mqtt() {
     mqtt_client.publish(MQTT_TOPIC_STATUS, "online", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_CO2, CO2_SENSOR_ENABLED ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_LIGHT, light_sensor_available ? "online" : "offline", true);
-    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_WATER_LEVEL, WATER_LEVEL_SENSOR_ENABLED ? "online" : "offline", true);
-    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT, AERATOR_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
-    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT, PUMP_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_WATER_LEVEL, has_water_level_runtime_data() ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT, has_aerator_current_runtime_data() ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT, has_pump_current_runtime_data() ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_2, AERATOR_2_HARDWARE_AVAILABLE ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_ALARM_OUTPUT, ALARM_OUTPUT_HARDWARE_AVAILABLE ? "online" : "offline", true);
 
@@ -498,7 +513,7 @@ void publish_mqtt_discovery() {
     "",
     "measurement",
     MQTT_TOPIC_AVAILABILITY_WATER_LEVEL,
-    WATER_LEVEL_SENSOR_ENABLED
+    has_water_level_runtime_data()
   );
 
   publish_sensor_discovery(
@@ -567,7 +582,7 @@ void publish_mqtt_discovery() {
     "current",
     "measurement",
     MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT,
-    AERATOR_CURRENT_SENSOR_ENABLED
+    has_aerator_current_runtime_data()
   );
 
   publish_sensor_discovery(
@@ -579,7 +594,7 @@ void publish_mqtt_discovery() {
     "current",
     "measurement",
     MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT,
-    PUMP_CURRENT_SENSOR_ENABLED
+    has_pump_current_runtime_data()
   );
 
   publish_sensor_discovery(
@@ -969,9 +984,9 @@ void read_sensors() {
     sensors.do_value = BENCH_DEFAULT_DO;
     sensors.co2 = BENCH_DEFAULT_CO2;
     sensors.light = BENCH_DEFAULT_LIGHT;
-    sensors.water_level = BENCH_DEFAULT_WATER_LEVEL;
-    sensors.aerator_current = BENCH_DEFAULT_AERATOR_CURRENT;
-    sensors.pump_current = BENCH_DEFAULT_PUMP_CURRENT;
+    sensors.water_level = has_water_level_runtime_data() ? BENCH_DEFAULT_WATER_LEVEL : 0.0f;
+    sensors.aerator_current = has_aerator_current_runtime_data() ? BENCH_DEFAULT_AERATOR_CURRENT : 0.0f;
+    sensors.pump_current = has_pump_current_runtime_data() ? BENCH_DEFAULT_PUMP_CURRENT : 0.0f;
   } else {
     waterTemp.requestTemperatures();
     sensors.water_temp = waterTemp.getTempCByIndex(0);
@@ -1168,9 +1183,15 @@ void publish_sensor_data() {
   mqtt_client.publish(MQTT_TOPIC_AIR_TEMP, String(sensors.air_temp, 2).c_str(), true);
   mqtt_client.publish(MQTT_TOPIC_HUMIDITY, String(sensors.air_humidity, 2).c_str(), true);
   mqtt_client.publish(MQTT_TOPIC_LIGHT, String(sensors.light, 2).c_str(), true);
-  mqtt_client.publish(MQTT_TOPIC_WATER_LEVEL, String(sensors.water_level, 2).c_str(), true);
-  mqtt_client.publish(MQTT_TOPIC_AERATOR_CURRENT, String(sensors.aerator_current, 2).c_str(), true);
-  mqtt_client.publish(MQTT_TOPIC_PUMP_CURRENT, String(sensors.pump_current, 2).c_str(), true);
+  if (has_water_level_runtime_data()) {
+    mqtt_client.publish(MQTT_TOPIC_WATER_LEVEL, String(sensors.water_level, 2).c_str(), true);
+  }
+  if (has_aerator_current_runtime_data()) {
+    mqtt_client.publish(MQTT_TOPIC_AERATOR_CURRENT, String(sensors.aerator_current, 2).c_str(), true);
+  }
+  if (has_pump_current_runtime_data()) {
+    mqtt_client.publish(MQTT_TOPIC_PUMP_CURRENT, String(sensors.pump_current, 2).c_str(), true);
+  }
 
   publish_runtime_status_topics();
 }

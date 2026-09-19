@@ -243,7 +243,7 @@ done
 Then reboot ESP32 so discovery for **Aquaculture Controller V2** is republished.
 
 ### Slow updates?
-1. Reduce `mqtt_update_interval` in `app_config.h` (default: 60s)
+1. Reduce `MQTT_PUBLISH_INTERVAL` in `include/app_config.h` (milliseconds)
 2. Check WiFi signal strength
 3. Monitor MQTT broker CPU load
 
