@@ -220,11 +220,6 @@ void reconnect_mqtt() {
     connected = mqtt_connect_without_auth(MQTT_ENABLE_LWT);
   }
 
-  if (!connected && MQTT_ENABLE_LWT && mqtt_client.state() == 5) {
-    Serial.println("[MQTT] Broker rejected LWT/auth combination (rc=5), retrying without LWT");
-    connected = (strlen(MQTT_USER) > 0) ? mqtt_connect_with_auth(false) : mqtt_connect_without_auth(false);
-  }
-
   if (connected) {
     Serial.println("[OK] MQTT Connected!");
 
@@ -251,6 +246,9 @@ void reconnect_mqtt() {
     Serial.print(mqtt_client.state());
     Serial.print(", WiFi=");
     Serial.println(WiFi.status());
+    if (MQTT_ENABLE_LWT && mqtt_client.state() == 5) {
+      Serial.println("[MQTT] rc=5 while LWT is enabled; use MQTT_ENABLE_LWT=false for brokers that only accept clientId/user/password");
+    }
   }
 }
 
@@ -637,7 +635,7 @@ void read_sensors() {
   if (isnan(sensors.air_temp)) sensors.air_temp = BENCH_TEST_MODE ? BENCH_DEFAULT_AIR_TEMP : 0;
   if (isnan(sensors.air_humidity)) sensors.air_humidity = BENCH_TEST_MODE ? BENCH_DEFAULT_AIR_HUMIDITY : 0;
 
-  sensors.light = bh1750_ready ? lightMeter.readLightLevel() : BENCH_DEFAULT_LIGHT;
+  sensors.light = bh1750_ready ? lightMeter.readLightLevel() : (BENCH_TEST_MODE ? BENCH_DEFAULT_LIGHT : 0.0f);
   if (sensors.light < 0) sensors.light = 0;
 
   sensors.last_read = millis();
