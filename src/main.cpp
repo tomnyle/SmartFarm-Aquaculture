@@ -91,6 +91,7 @@ void initialize_device_identity();
 void update_system_status_flags();
 bool is_supported_mode(const char* mode);
 bool is_supported_species(const char* species);
+void publish_runtime_status_topics();
 
 void initialize_device_identity() {
   uint64_t chip_id = ESP.getEfuseMac();
@@ -248,6 +249,7 @@ bool is_supported_species(const char* species) {
     strcmp(species, "Cá Lóc") == 0 ||
     strcmp(species, "Tôm Thẻ") == 0 ||
     strcmp(species, "Tôm Sú") == 0 ||
+    strcmp(species, "Rô Phi") == 0 ||
     strcmp(species, "Tilapia") == 0;
 }
 
@@ -409,6 +411,7 @@ void reconnect_mqtt() {
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY, "online", true);
     mqtt_client.publish(MQTT_TOPIC_STATUS, "online", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_CO2, CO2_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_LIGHT, light_sensor_available ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_WATER_LEVEL, WATER_LEVEL_SENSOR_ENABLED ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT, AERATOR_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT, PUMP_CURRENT_SENSOR_ENABLED ? "online" : "offline", true);
@@ -539,7 +542,8 @@ void publish_mqtt_discovery() {
     "mdi:brightness-6",
     "illuminance",
     "measurement",
-    MQTT_TOPIC_AVAILABILITY
+    MQTT_TOPIC_AVAILABILITY_LIGHT,
+    light_sensor_available
   );
 
   publish_sensor_discovery(
@@ -744,7 +748,8 @@ void publish_mqtt_discovery() {
     doc["options"][4] = "Cá Lóc";
     doc["options"][5] = "Tôm Thẻ";
     doc["options"][6] = "Tôm Sú";
-    doc["options"][7] = "Tilapia";
+    doc["options"][7] = "Rô Phi";
+    doc["options"][8] = "Tilapia";
     set_common_availability(doc, MQTT_TOPIC_AVAILABILITY);
     attach_device_metadata(doc);
     publish_discovery_payload("select", "aquaculture_species", doc);
@@ -858,8 +863,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       current_mode[sizeof(current_mode) - 1] = '\0';
       Serial.print("[CONFIG] Mode changed to: ");
       Serial.println(current_mode);
+      update_system_status_flags();
       mqtt_client.publish(MQTT_TOPIC_MODE_STATE, current_mode, true);
       mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+      publish_runtime_status_topics();
     } else {
       Serial.print("[CONFIG] Ignored unsupported mode: ");
       Serial.println(message);
@@ -873,7 +880,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       current_species[sizeof(current_species) - 1] = '\0';
       Serial.print("[CONFIG] Species changed to: ");
       Serial.println(current_species);
+      update_system_status_flags();
       mqtt_client.publish(MQTT_TOPIC_SPECIES_STATE, current_species, true);
+      publish_runtime_status_topics();
     } else {
       Serial.print("[CONFIG] Ignored unsupported species: ");
       Serial.println(message);
@@ -907,6 +916,20 @@ void update_system_status_flags() {
   } else {
     snprintf(safety_state, sizeof(safety_state), "NORMAL");
     snprintf(alarm_text, sizeof(alarm_text), "No alarms");
+  }
+
+  void publish_runtime_status_topics() {
+    if (!mqtt_client.connected()) {
+      return;
+    }
+
+    mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+    mqtt_client.publish(MQTT_TOPIC_CONTROLLER_STATUS, controller_status, true);
+    mqtt_client.publish(MQTT_TOPIC_SAFETY_STATE, safety_state, true);
+    mqtt_client.publish(MQTT_TOPIC_ALARM_TEXT, alarm_text, true);
+    mqtt_client.publish(MQTT_TOPIC_ALARM_ACTIVE, alarm_active ? "ON" : "OFF", true);
+    mqtt_client.publish(MQTT_TOPIC_SAFETY_ACTIVE, safety_active ? "ON" : "OFF", true);
+    mqtt_client.publish(MQTT_TOPIC_EMERGENCY_ACTIVE, emergency_active ? "ON" : "OFF", true);
   }
 
   if (!mqtt_connection_attempted && !mqtt_connected_once) {
@@ -1133,13 +1156,7 @@ void publish_sensor_data() {
   mqtt_client.publish(MQTT_TOPIC_AERATOR_CURRENT, String(sensors.aerator_current, 2).c_str(), true);
   mqtt_client.publish(MQTT_TOPIC_PUMP_CURRENT, String(sensors.pump_current, 2).c_str(), true);
 
-  mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
-  mqtt_client.publish(MQTT_TOPIC_CONTROLLER_STATUS, controller_status, true);
-  mqtt_client.publish(MQTT_TOPIC_SAFETY_STATE, safety_state, true);
-  mqtt_client.publish(MQTT_TOPIC_ALARM_TEXT, alarm_text, true);
-  mqtt_client.publish(MQTT_TOPIC_ALARM_ACTIVE, alarm_active ? "ON" : "OFF", true);
-  mqtt_client.publish(MQTT_TOPIC_SAFETY_ACTIVE, safety_active ? "ON" : "OFF", true);
-  mqtt_client.publish(MQTT_TOPIC_EMERGENCY_ACTIVE, emergency_active ? "ON" : "OFF", true);
+  publish_runtime_status_topics();
 }
 
 // ==================== PUBLISH OUTPUT STATE ====================

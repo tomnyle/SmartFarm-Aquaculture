@@ -78,6 +78,7 @@
 // Availability Topics
 #define MQTT_TOPIC_AVAILABILITY "smartfarm/aquaculture/availability"
 #define MQTT_TOPIC_AVAILABILITY_CO2 "smartfarm/aquaculture/availability/co2"
+#define MQTT_TOPIC_AVAILABILITY_LIGHT "smartfarm/aquaculture/availability/light"
 #define MQTT_TOPIC_AVAILABILITY_WATER_LEVEL "smartfarm/aquaculture/availability/water_level"
 #define MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT "smartfarm/aquaculture/availability/aerator_current"
 #define MQTT_TOPIC_AVAILABILITY_PUMP_CURRENT "smartfarm/aquaculture/availability/pump_current"
