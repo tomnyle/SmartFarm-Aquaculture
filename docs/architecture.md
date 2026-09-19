@@ -1,170 +1,101 @@
-# SmartFarm Aquaculture Controller - Architecture
+# SmartAquaculture Architecture V1
 
-## System Overview
+## 1. Deployment target
 
-The Aquaculture Controller is designed to manage family pond conditions autonomously. It operates independently from Home Assistant but integrates with it via MQTT for monitoring and remote control.
+V1 targets a **single family pond around 200 m²** with one ESP32 controller that can continue protecting the pond when the network is unavailable.
 
-## Core Principles
+## 2. V1 single-node architecture
 
-1. **Autonomy**: Works without network connection
-2. **Simplicity**: Focus on essential measurements only
-3. **Safety**: Conservative approach to automation (alert, don't auto-fix)
-4. **Modularity**: Easy to extend with more sensors/outputs
-
-## Hardware Architecture
-
-```
-    ESP32 Microcontroller
-    ├── 1-Wire Bus (GPIO4)
-    │   └── DS18B20 Temperature Sensor
-    ├── I2C Bus (GPIO21/22)
-    │   ├── ADS1115 #1 (pH & DO)
-    │   └── ADS1115 #2 (optional, future expansion)
-    ├── Analog Input (GPIO34)
-    │   └── Water Level Sensor
-    └── GPIO Digital Outputs (GPIO32-27, 14, 12-13)
-        ├── Relay 1: Aerator
-        ├── Relay 2: Water Pump
-        ├── Relay 3: Circulation
-        ├── Relay 4: Feeder
-        ├── Relay 5: Valve
-        ├── Relay 6: Light
-        ├── Relay 7: Spare 1
-        └── Relay 8: Spare 2
+```text
+Sensors ─┐
+         ├── ESP32 SmartAquaculture V1 ── MQTT ── Home Assistant ── Recorder / InfluxDB / Grafana
+Outputs ─┘
 ```
 
-## Software Architecture
+### Sensor side
+- DO (primary safety signal)
+- Water temperature (DS18B20)
+- pH
+- Water level
+- Optional advisory hooks: turbidity, CO2, light, air temp/humidity, aerator current, pump current
 
-### Layer 1: Hardware Abstraction
-- Sensor drivers (temperature, pH, DO, level)
-- Relay drivers
-- ADC interface (ADS1115)
-- 1-Wire interface
+### Control side
+- Aerator 1
+- Aerator 2
+- Pump
+- Circulation
+- Feeder
+- Alarm beacon / buzzer
 
-### Layer 2: Core Services
-- System state management
-- Configuration management
-- Rule engine
-- Scheduler
+### Safety side
+- Sensor validity / stale detection
+- DO-first fail-safe control
+- Water-level critical lockout
+- Pump max runtime protection
+- Feeder runtime limit
+- Current-monitoring fault hooks
 
-### Layer 3: Communication
-- WiFi stack
-- MQTT client
-- Home Assistant discovery
+## 3. Future 2-node architecture
 
-### Layer 4: Application Logic
-- Aquaculture-specific profiles
-- Operating mode management
-- Error handling
+When the pond grows or uptime becomes more critical, split the design:
 
-## Control Flow
-
-```
-┌─────────────────────┐
-│  Read Sensors       │
-│  (30s interval)     │
-└──────────┬──────────┘
-           │
-           v
-┌─────────────────────┐
-│  Evaluate Rules     │
-│  (5s interval)      │
-└──────────┬──────────┘
-           │
-           v
-┌─────────────────────┐
-│  Apply Outputs      │
-└──────────┬──────────┘
-           │
-           v
-┌─────────────────────┐
-│  Publish MQTT       │
-│  (60s interval)     │
-└─────────────────────┘
+```text
+ESP32 Sensor Node            ESP32 Control Node
+- DO                         - Aerator 1 / 2
+- pH                         - Pump
+- Temperature                - Feeder
+- Water level                - Alarm
+        \                    /
+         \---- MQTT bus ----/
+                 |
+          Home Assistant
 ```
 
-## Operating Modes
+This separation reduces the chance that a sensor-side failure also stops protective outputs.
 
-### AUTO Mode
-- Reads sensor values
-- Evaluates rules against active profile
-- Automatically controls outputs
-- Debounced to prevent relay chatter
+## 4. State machine
 
-### MANUAL Mode
-- Ignores rules
-- Accepts direct commands from MQTT
-- Used for testing and emergency control
+### AUTO
+- Default operating mode.
+- Uses local rules and species advisory limits.
+- May start aeration, circulation, or refill pump automatically.
 
-### SCHEDULE Mode
-- Executes predefined time-based commands
-- Typically for feeding schedules
-- Can be combined with AUTO mode
+### MANUAL
+- Accepts MQTT operator commands.
+- Still cannot violate hard safety rules.
+- Manual override automatically times out and returns to AUTO.
 
-### SAFE Mode
-- Activated on critical errors:
-  - Multiple sensor failures
-  - Water level below critical threshold
-  - Temperature exceeding safe limits
-  - DO below critical level
-- Default safe state:
-  - Aerator: ON
-  - All other outputs: OFF
-  - Periodic alarm notification
+### SCHEDULE
+- Reserved for timer-based automation such as feeding windows.
+- In V1 it behaves like AUTO with room for future schedules.
 
-## Safety Features
+### SAFE
+- Entered automatically on severe but non-emergency conditions such as:
+  - DO sensor fault / stale data
+  - DO critical
+  - water level critical
+  - temperature critical
+- Conservative response: protect pond first, disable risky actions, lock feeder.
 
-1. **Sensor Validation**: Sanity checks on all sensor readings
-2. **Debouncing**: Prevents rapid relay switching
-3. **Minimum On/Off Times**: Protects equipment from rapid cycling
-4. **Watchdog Timer**: Resets system on hangup
-5. **Safe Mode Fallback**: Enters protective state on errors
-6. **No Chemical Dosing**: Phase 1 only alerts on pH issues
+### EMERGENCY
+- Highest priority.
+- Triggered by DO emergency level or operator-forced emergency mode.
+- Both aerators ON, alarm ON, feeder locked.
 
-## MQTT Integration
+## 5. Data flow
 
-All sensor data published to MQTT at configured interval (default 60s):
-
-```json
-{
-  "device_id": "aquaculture-001",
-  "timestamp": 1694726400,
-  "mode": "AUTO",
-  "status": "running",
-  "sensors": {
-    "temperature": 27.5,
-    "ph": 7.8,
-    "do": 6.2,
-    "level": 85.3
-  },
-  "outputs": {
-    "aerator": true,
-    "water_pump": false,
-    "circulation": false,
-    "feeder": false
-  },
-  "profile": "shrimp"
-}
+```text
+ESP32 sensor read
+  -> local validation / stale detection
+  -> local rule engine decides outputs
+  -> relay state changes
+  -> MQTT telemetry and events
+  -> Home Assistant entities
+  -> Recorder / InfluxDB / Grafana history
 ```
 
-## Error Handling
+## 6. Design notes
 
-| Error | Response | Recovery |
-|-------|----------|----------|
-| Sensor failure | Log error, use last valid value | Retry next cycle |
-| MQTT disconnect | Continue local operation | Auto-reconnect |
-| Water level low | Alert, disable pump | Manual intervention |
-| Temperature extreme | Alert, enable safety devices | Check heating/cooling |
-| DO critical | Enable aerator, alert | Check aerator functionality |
-
-## Future Expansion
-
-Phase 2+ additions:
-- ORP (Oxidation-Reduction Potential)
-- Salinity
-- EC (Electrical Conductivity)
-- Turbidity
-- NH3/NH4, NO2, NO3
-- Multiple pond support
-- Advanced scheduling
-- Data logging to cloud
+- V1 keeps the **decision engine on the ESP32**.
+- Home Assistant is for visibility, acknowledgements, dashboards, and higher-level automation.
+- The pond must remain protected if Wi-Fi or MQTT is down.

@@ -1,0 +1,53 @@
+title: Smart Aquaculture V1
+views:
+  - title: Pond
+    path: pond
+    badges: []
+    cards:
+      - type: entities
+        title: Water status
+        show_header_toggle: false
+        entities:
+          - entity: sensor.aquaculture_do
+            name: DO
+          - entity: sensor.aquaculture_ph
+            name: pH
+          - entity: sensor.aquaculture_water_temperature
+            name: Water temperature
+          - entity: sensor.aquaculture_water_level
+            name: Water level
+          - entity: sensor.aquaculture_aerator_current
+            name: Aerator current
+          - entity: sensor.aquaculture_pump_current
+            name: Pump current
+
+      - type: entities
+        title: Actuators
+        show_header_toggle: false
+        entities:
+          - entity: switch.aquaculture_aerator_1
+          - entity: switch.aquaculture_aerator_2
+          - entity: switch.aquaculture_pump
+          - entity: switch.aquaculture_feeder
+          - entity: switch.aquaculture_alarm
+          - entity: select.aquaculture_mode
+          - entity: select.aquaculture_species
+
+      - type: entities
+        title: Safety
+        show_header_toggle: false
+        entities:
+          - entity: sensor.aquaculture_safety_state
+          - entity: sensor.aquaculture_alarm_text
+          - entity: binary_sensor.aquaculture_alarm_active
+          - entity: binary_sensor.aquaculture_safety_active
+          - entity: binary_sensor.aquaculture_emergency_active
+
+      - type: history-graph
+        title: 24h trends
+        hours_to_show: 24
+        entities:
+          - entity: sensor.aquaculture_do
+          - entity: sensor.aquaculture_ph
+          - entity: sensor.aquaculture_water_temperature
+          - entity: sensor.aquaculture_water_level

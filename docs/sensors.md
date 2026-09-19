@@ -1,171 +1,61 @@
-# Sensor Specifications & Calibration
+# Sensor Guide
 
-## Temperature Sensor (DS18B20)
+## DO is the primary sensor
 
-### Specifications
-- Sensor: Dallas DS18B20
-- Protocol: 1-Wire (GPIO4)
-- Resolution: 12-bit
-- Accuracy: ±0.5°C (-10 to 85°C)
-- Response Time: ~750ms
-- Cost: ~$1-2
+For a practical family pond controller, **DO is the main safety input**. The controller should react to DO drops locally without waiting for Home Assistant.
 
-### Wiring
-```
-DS18B20
-  ├─ VCC (Red) → 3.3V or 5V
-  ├─ GND (Black) → GND
-  └─ DATA (Yellow) → GPIO4 (with 4.7k pull-up to VCC)
-```
+### V1 DO policy
+- DO warning -> Aerator 1 ON + warning event
+- DO low -> Aerator 1 ON + alarm
+- DO critical -> SAFE behavior + both aerators ON + feeder lock
+- DO emergency -> EMERGENCY behavior + both aerators ON + alarm
+- DO invalid / stale -> sensor fault, safe aeration fallback
 
-### Calibration
-DS18B20 has built-in calibration. Optional offset correction:
+## pH sensor
 
-```cpp
-sensor.setCalibrationOffset(offset_degrees_C);
-```
-
-## pH Sensor
-
-### Specifications
-- Electrode: Glass electrode (analog output)
-- Amplifier Module: PH meter analog module
-- ADC: ADS1115 (16-bit, I2C)
-- Sensitivity: ~59mV per pH unit (at 25°C)
-- Accuracy: ±0.2 pH (after calibration)
-- Response Time: 30-60 seconds
-- Cost: $15-30
-
-### Wiring
-```
-PH Electrode → Amplifier → ADS1115 A0
-  ├─ VCC → 3.3V
-  ├─ GND → GND
-  └─ OUT → ADS1115 A0
-
-ADS1115 → ESP32
-  ├─ VCC → 3.3V
-  ├─ GND → GND
-  ├─ SDA → GPIO21
-  └─ SCL → GPIO22
-```
-
-### Calibration (Two-Point)
-
-Must do two-point calibration before use:
-
-1. **Calibration Point 1 (pH 7.0 or 6.86)**
-   - Place electrode in buffer solution pH 7.0
-   - Record voltage reading
-   - Call: `sensor.setCalibrationPoint1(voltage, 7.0)`
-
-2. **Calibration Point 2 (pH 4.0 or 10.0)**
-   - Place electrode in second buffer solution
-   - Record voltage reading
-   - Call: `sensor.setCalibrationPoint2(voltage, 4.0)` or `(voltage, 10.0)`
-
-### Maintenance
-- Storage: Keep electrode in storage solution
-- Cleaning: Rinse with distilled water before use
-- Replacement: Electrode typically lasts 1-2 years
-
-## Dissolved Oxygen Sensor
-
-### Specifications
-- Type: Optical DO probe or analog DO sensor
-- ADC: ADS1115 (16-bit, I2C)
-- Range: 0-20 mg/L (or 0-100%)
-- Accuracy: ±0.3 mg/L (after calibration)
-- Response Time: 10-30 seconds
-- Cost: $40-100 (most expensive sensor)
-
-### Wiring
-```
-DO Probe → Amplifier → ADS1115 A1
-  ├─ VCC → 3.3V or 5V
-  ├─ GND → GND
-  └─ OUT → ADS1115 A1
-```
-
-### Calibration (Two-Point Recommended)
-
-1. **Zero Calibration (0% DO)**
-   - Use nitrogen gas or boiled water
-   - Record voltage
-   - Call: `sensor.setCalibrationPoints(voltage, 0.0, ...)`
-
-2. **Span Calibration (100% DO)**
-   - Expose probe to air-saturated water
-   - Record voltage at 100% saturation
-   - Note: 100% varies by temperature and altitude
-   - At sea level, 25°C: ~8.6 mg/L
-
-### Temperature Compensation
-```cpp
-sensor.setWaterTemperature(25.5);  // For accurate DO calculation
-```
-
-## Water Level Sensor
-
-### Specifications
-- Type: Ultrasonic or capacitive water level sensor
-- Signal: 0-5V analog (read via ADS1115)
-- Accuracy: ±2-5% of range
-- Response Time: <100ms
-- Cost: $10-20
-
-### Wiring
-```
-Water Level Sensor
-  ├─ VCC → 5V
-  ├─ GND → GND
-  └─ OUT → GPIO34 or ADS1115 A2
-```
+### V1 use
+- Show current pH
+- Warn when pH is outside the configured/species range
+- Warn when pH changes too quickly (`PH_RATE_LIMIT`)
+- **Do not auto-dose chemicals** in V1
 
 ### Calibration
+- Perform at least a two-point calibration with fresh buffer solutions.
+- Re-check calibration after cleaning or probe replacement.
+- Record any offset/slope change in maintenance notes.
 
-1. **Measure empty level (0%)**
-   ```cpp
-   sensor.setMinMaxLevel(0, 100);  // in cm
-   ```
+## DS18B20 water temperature
 
-2. **Measure full level (100%)**
-   ```cpp
-   sensor.setCalibrationPoints(adc_empty, adc_full, 0, 100);
-   ```
+### V1 use
+- Feed into safe/critical temperature checks
+- Lock feeder and force aeration when water temperature is critical
+- Use the waterproof probe variant for pond deployment
 
-## Sensor Selection Strategy
+## Water level
 
-### Phase 1 (V0.1) - Essential Only
-✓ Temperature (DS18B20)
-✓ pH (via ADS1115)
-✓ Dissolved Oxygen (via ADS1115)
-✓ Water Level (via ADS1115)
+### V1 use
+- Detect low and critical water levels
+- Auto-request refill pump in AUTO/SCHEDULE when below low threshold
+- Stop pump and raise a device fault if runtime exceeds `PUMP_MAX_RUN_TIME_MS` without recovery
+- Lock feeder when level is critical
 
-### Phase 2 - Enhanced Monitoring
-- ORP (Oxidation potential)
-- Conductivity/Salinity
+## Current monitoring hooks
 
-### Phase 3 - Advanced Analysis
-- Ammonia/Nitrite/Nitrate
-- Turbidity
-- Pressure/Depth
+### Aerator current
+Used as a verification hook:
+- Output says ON, but current is below `CURRENT_MIN_RUNNING_A` -> possible relay / motor / power fault
+- Current above `CURRENT_MAX_RUNNING_A` -> possible overload
 
-## Recommended Suppliers
+### Pump current
+Used similarly for pump fault detection.
 
-- **Sensors**: AliExpress, DFRobot, Adafruit
-- **Modules**: Taobao, Amazon
-- **Electrodes**: YSI, Hach (expensive but accurate)
+> Note: V1 treats these as hooks. Final current calibration depends on the installed CT/Hall sensor and analog front-end.
 
-## Cost Estimate (Phase 1)
+## V2 sensors
 
-| Component | Cost | Notes |
-|-----------|------|-------|
-| DS18B20 | $2 | Temperature |
-| PH Probe + Module | $25 | Full kit |
-| DO Probe + Module | $80 | Most expensive |
-| Water Level | $15 | Ultrasonic |
-| ADS1115 (2x) | $5 | ADC modules |
-| **Total** | **~$127** | USD |
+These are intentionally deferred until V1 is stable:
+- ORP
+- NH3/NH4 online sensing
+- NO2 online sensing
 
-Note: Prices vary significantly by region and supplier quality.
+For V1, NH3/NH4 and NO2 can be tracked manually with test kits and entered into Home Assistant notes/logs.
