@@ -87,6 +87,8 @@ void publish_output_state();
 void set_output(const char* name, bool state);
 void initialize_device_identity();
 void update_system_status_flags();
+bool is_supported_mode(const char* mode);
+bool is_supported_species(const char* species);
 
 void initialize_device_identity() {
   uint64_t chip_id = ESP.getEfuseMac();
@@ -225,6 +227,26 @@ void publish_switch_discovery(
   set_common_availability(doc, availability_topic);
   attach_device_metadata(doc);
   publish_discovery_payload("switch", object_id, doc);
+}
+
+bool is_supported_mode(const char* mode) {
+  return
+    strcmp(mode, "AUTO") == 0 ||
+    strcmp(mode, "MANUAL") == 0 ||
+    strcmp(mode, "SCHEDULE") == 0 ||
+    strcmp(mode, "SAFE") == 0;
+}
+
+bool is_supported_species(const char* species) {
+  return
+    strcmp(species, "Koi") == 0 ||
+    strcmp(species, "Cá Trắm") == 0 ||
+    strcmp(species, "Cá Chép") == 0 ||
+    strcmp(species, "Cá Tra") == 0 ||
+    strcmp(species, "Cá Lóc") == 0 ||
+    strcmp(species, "Tôm Thẻ") == 0 ||
+    strcmp(species, "Tôm Sú") == 0 ||
+    strcmp(species, "Tilapia") == 0;
 }
 
 // ==================== SETUP ====================
@@ -821,20 +843,32 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (strcmp(topic, MQTT_TOPIC_CONTROL_MODE) == 0) {
-    strncpy(current_mode, message.c_str(), sizeof(current_mode) - 1);
-    current_mode[sizeof(current_mode) - 1] = '\0';
-    Serial.print("[CONFIG] Mode changed to: ");
-    Serial.println(current_mode);
-    mqtt_client.publish(MQTT_TOPIC_MODE_STATE, current_mode, true);
-    mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+    if (is_supported_mode(message.c_str())) {
+      strncpy(current_mode, message.c_str(), sizeof(current_mode) - 1);
+      current_mode[sizeof(current_mode) - 1] = '\0';
+      Serial.print("[CONFIG] Mode changed to: ");
+      Serial.println(current_mode);
+      mqtt_client.publish(MQTT_TOPIC_MODE_STATE, current_mode, true);
+      mqtt_client.publish(MQTT_TOPIC_STATE, current_mode, true);
+    } else {
+      Serial.print("[CONFIG] Ignored unsupported mode: ");
+      Serial.println(message);
+      mqtt_client.publish(MQTT_TOPIC_MODE_STATE, current_mode, true);
+    }
   }
 
   if (strcmp(topic, MQTT_TOPIC_CONFIG_SPECIES) == 0) {
-    strncpy(current_species, message.c_str(), sizeof(current_species) - 1);
-    current_species[sizeof(current_species) - 1] = '\0';
-    Serial.print("[CONFIG] Species changed to: ");
-    Serial.println(current_species);
-    mqtt_client.publish(MQTT_TOPIC_SPECIES_STATE, current_species, true);
+    if (is_supported_species(message.c_str())) {
+      strncpy(current_species, message.c_str(), sizeof(current_species) - 1);
+      current_species[sizeof(current_species) - 1] = '\0';
+      Serial.print("[CONFIG] Species changed to: ");
+      Serial.println(current_species);
+      mqtt_client.publish(MQTT_TOPIC_SPECIES_STATE, current_species, true);
+    } else {
+      Serial.print("[CONFIG] Ignored unsupported species: ");
+      Serial.println(message);
+      mqtt_client.publish(MQTT_TOPIC_SPECIES_STATE, current_species, true);
+    }
   }
 }
 
@@ -909,9 +943,9 @@ void read_sensors() {
     sensors.do_value = (analogRead(DO_PIN) / 4095.0f) * 20.0f;
     sensors.co2 = CO2_SENSOR_ENABLED ? (analogRead(CO2_PIN) / 4095.0f) * 10.0f : 0.0f;
 
-    sensors.water_level = WATER_LEVEL_SENSOR_ENABLED ? BENCH_DEFAULT_WATER_LEVEL : 0.0f;
-    sensors.aerator_current = AERATOR_CURRENT_SENSOR_ENABLED ? BENCH_DEFAULT_AERATOR_CURRENT : 0.0f;
-    sensors.pump_current = PUMP_CURRENT_SENSOR_ENABLED ? BENCH_DEFAULT_PUMP_CURRENT : 0.0f;
+    sensors.water_level = 0.0f;
+    sensors.aerator_current = 0.0f;
+    sensors.pump_current = 0.0f;
 
     uint32_t now = millis();
     if (sensors.has_last_ph && now > sensors.last_ph_timestamp) {
