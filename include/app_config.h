@@ -4,11 +4,13 @@
 #include <Arduino.h>
 
 // Firmware Version
-#define FW_VERSION "0.2.0"
+#define FW_VERSION "2.0.0"
 #define FW_BUILD_DATE __DATE__
 #define FW_DEVICE_ID "ESP32_AQUACULTURE_001"
 
 // ==================== WIFI CONFIGURATION ====================
+// NOTE: These are deployment credentials. Keep them in sync with your actual environment
+// and avoid printing secrets such as passwords to Serial logs.
 #define WIFI_SSID "Le Danh"
 #define WIFI_PASSWORD "123456789"
 #define WIFI_CONNECT_TIMEOUT 30000  // 30 seconds
@@ -20,10 +22,28 @@
 #define MQTT_PASSWORD "Danh@@@1992"
 #define MQTT_CLIENT_ID "ESP32_AQUACULTURE"
 #define MQTT_RECONNECT_INTERVAL 5000
+#define MQTT_ENABLE_LWT false
+#define MQTT_LWT_TOPIC "smartfarm/aquaculture/status"
+#define MQTT_LWT_PAYLOAD_ONLINE "online"
+#define MQTT_LWT_PAYLOAD_OFFLINE "offline"
 
 // ==================== HOME ASSISTANT MQTT DISCOVERY ====================
 #define HA_DISCOVERY_PREFIX "homeassistant"
 #define HA_DISCOVERY_ENABLED true
+
+// ==================== BENCH / V2 HARDWARE COMPATIBILITY ====================
+// Enable bench mode while sensors/relays are not fully connected. Set to false on
+// real hardware to restore full fail-safe behavior from real sensor readings.
+#define BENCH_TEST_MODE false
+#define BENCH_DEFAULT_WATER_TEMP 27.0f
+#define BENCH_DEFAULT_PH 7.20f
+#define BENCH_DEFAULT_DO 6.50f
+#define BENCH_DEFAULT_TURBIDITY 0.0f
+#define BENCH_DEFAULT_AIR_TEMP 28.0f
+#define BENCH_DEFAULT_AIR_HUMIDITY 65.0f
+#define BENCH_DEFAULT_LIGHT 0.0f
+#define CO2_SENSOR_ENABLED false
+#define PH_TREND_MIN_INTERVAL_MS 60000UL
 
 // ==================== MQTT TOPICS (APPLICATION NAMESPACE) ====================
 // Sensor Topics - State
