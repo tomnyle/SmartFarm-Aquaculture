@@ -125,7 +125,7 @@
 #define ALARM_OUTPUT_HARDWARE_AVAILABLE false
 
 // ==================== TEST MODES ====================
-#define BENCH_TEST_MODE true
+#define BENCH_TEST_MODE false
 #define SENSOR_TEST_MODE false
 
 #if BENCH_TEST_MODE && SENSOR_TEST_MODE
@@ -162,6 +162,12 @@
 #define DO_FULL_SCALE_VOLTAGE 2.20f
 #define DO_FULL_SCALE_MG_L 12.0f
 #define DO_MAX_VALUE 20.0f
+
+// CO2 mapping (optional analog input)
+#define CO2_ZERO_VOLTAGE 0.40f
+#define CO2_FULL_SCALE_VOLTAGE 2.00f
+#define CO2_FULL_SCALE_PPM 10.0f
+#define CO2_MAX_VALUE 100.0f
 
 // Turbidity: only publish calibrated NTU when this flag is true
 #define TURBIDITY_CALIBRATED false

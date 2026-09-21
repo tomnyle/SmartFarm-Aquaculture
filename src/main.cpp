@@ -85,6 +85,7 @@ bool safety_active = false;
 bool emergency_active = false;
 bool mqtt_connection_attempted = false;
 bool mqtt_connected_once = false;
+bool required_analog_pins_valid = true;
 
 // ==================== FORWARD DECLARATIONS ====================
 void setup_wifi();
@@ -104,17 +105,21 @@ void publish_runtime_status_topics();
 bool has_water_level_runtime_data();
 bool has_aerator_current_runtime_data();
 bool has_pump_current_runtime_data();
+bool has_co2_runtime_data();
+bool has_required_analog_runtime_data();
 bool outputs_locked_for_test();
 bool is_adc1_pin(int pin);
 int read_analog_average(int pin, int samples);
 float clamp_float(float value, float min_value, float max_value);
 float adc_to_voltage(int adc_raw);
+int voltage_to_adc(float voltage);
 float read_ph_from_adc(int adc_raw);
 float read_do_from_adc(int adc_raw);
+float read_co2_from_adc(int adc_raw);
 float read_turbidity_from_adc(int adc_raw);
 float read_water_level_from_adc(int adc_raw);
 float read_current_from_adc(int adc_raw, float zero_voltage, float amp_per_volt, float max_value);
-void publish_float_topic(const char* topic, float value);
+bool publish_float_topic(const char* topic, float value);
 
 void initialize_device_identity() {
   uint64_t chip_id = ESP.getEfuseMac();
@@ -324,6 +329,11 @@ float adc_to_voltage(int adc_raw) {
   return ((float)adc_raw / 4095.0f) * ADC_REFERENCE_VOLTAGE;
 }
 
+int voltage_to_adc(float voltage) {
+  float safe_voltage = clamp_float(voltage, 0.0f, ADC_REFERENCE_VOLTAGE);
+  return (int)((safe_voltage / ADC_REFERENCE_VOLTAGE) * 4095.0f);
+}
+
 float read_ph_from_adc(int adc_raw) {
   float voltage = adc_to_voltage(adc_raw);
   if (isnan(voltage) || PH_SLOPE_VOLT_PER_PH <= 0.0001f) {
@@ -344,6 +354,18 @@ float read_do_from_adc(int adc_raw) {
   float normalized = (voltage - DO_ZERO_VOLTAGE) / span;
   float do_value = normalized * DO_FULL_SCALE_MG_L;
   return clamp_float(do_value, 0.0f, DO_MAX_VALUE);
+}
+
+float read_co2_from_adc(int adc_raw) {
+  float voltage = adc_to_voltage(adc_raw);
+  float span = CO2_FULL_SCALE_VOLTAGE - CO2_ZERO_VOLTAGE;
+  if (isnan(voltage) || span <= 0.0001f) {
+    return NAN;
+  }
+
+  float normalized = (voltage - CO2_ZERO_VOLTAGE) / span;
+  float co2 = normalized * CO2_FULL_SCALE_PPM;
+  return clamp_float(co2, 0.0f, CO2_MAX_VALUE);
 }
 
 float read_turbidity_from_adc(int adc_raw) {
@@ -396,6 +418,14 @@ bool has_water_level_runtime_data() {
          (WATER_LEVEL_ADC_FULL != WATER_LEVEL_ADC_EMPTY);
 }
 
+bool has_co2_runtime_data() {
+  return CO2_SENSOR_ENABLED && is_adc1_pin(CO2_PIN);
+}
+
+bool has_required_analog_runtime_data() {
+  return is_adc1_pin(PH_PIN) && is_adc1_pin(DO_PIN) && is_adc1_pin(TURBIDITY_PIN);
+}
+
 bool has_aerator_current_runtime_data() {
   return AERATOR_CURRENT_SENSOR_ENABLED &&
          is_adc1_pin(AERATOR_CURRENT_PIN);
@@ -406,13 +436,13 @@ bool has_pump_current_runtime_data() {
          is_adc1_pin(PUMP_CURRENT_PIN);
 }
 
-void publish_float_topic(const char* topic, float value) {
+bool publish_float_topic(const char* topic, float value) {
   if (isnan(value)) {
-    mqtt_client.publish(topic, "nan", true);
-    return;
+    return false;
   }
 
   mqtt_client.publish(topic, String(value, 2).c_str(), true);
+  return true;
 }
 
 // ==================== SETUP ====================
@@ -445,11 +475,18 @@ void setup() {
   sensors.ph_trend = BENCH_DEFAULT_PH_TREND;
 
   analogReadResolution(12);
-  analogSetPinAttenuation(PH_PIN, ADC_11db);
-  analogSetPinAttenuation(TURBIDITY_PIN, ADC_11db);
-  analogSetPinAttenuation(DO_PIN, ADC_11db);
-  if (CO2_SENSOR_ENABLED) {
+  required_analog_pins_valid = has_required_analog_runtime_data();
+  if (required_analog_pins_valid) {
+    analogSetPinAttenuation(PH_PIN, ADC_11db);
+    analogSetPinAttenuation(TURBIDITY_PIN, ADC_11db);
+    analogSetPinAttenuation(DO_PIN, ADC_11db);
+  } else if (!BENCH_TEST_MODE) {
+    Serial.println("[CONFIG] Invalid analog pin mapping for PH/DO/TURBIDITY. Use ADC1 pins only.");
+  }
+  if (has_co2_runtime_data()) {
     analogSetPinAttenuation(CO2_PIN, ADC_11db);
+  } else if (CO2_SENSOR_ENABLED) {
+    Serial.println("[WARN] CO2 sensor enabled but CO2_PIN is not ADC1; sensor will be unavailable");
   }
   if (has_water_level_runtime_data()) {
     analogSetPinAttenuation(WATER_LEVEL_PIN, ADC_11db);
@@ -599,7 +636,7 @@ void reconnect_mqtt() {
 
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY, "online", true);
     mqtt_client.publish(MQTT_TOPIC_STATUS, "online", true);
-    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_CO2, CO2_SENSOR_ENABLED ? "online" : "offline", true);
+    mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_CO2, has_co2_runtime_data() ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_LIGHT, light_sensor_available ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_WATER_LEVEL, has_water_level_runtime_data() ? "online" : "offline", true);
     mqtt_client.publish(MQTT_TOPIC_AVAILABILITY_AERATOR_CURRENT, has_aerator_current_runtime_data() ? "online" : "offline", true);
@@ -745,7 +782,7 @@ void publish_mqtt_discovery() {
     "carbon_dioxide",
     "measurement",
     MQTT_TOPIC_AVAILABILITY_CO2,
-    CO2_SENSOR_ENABLED
+    has_co2_runtime_data()
   );
 
   publish_sensor_discovery(
@@ -1138,6 +1175,17 @@ void publish_runtime_status_topics() {
 }
 
 void update_system_status_flags() {
+  if (!required_analog_pins_valid && !BENCH_TEST_MODE) {
+    alarm_active = true;
+    emergency_active = false;
+    safety_active = true;
+    snprintf(safety_state, sizeof(safety_state), "ALARM");
+    snprintf(controller_status, sizeof(controller_status), "CONFIG_ERROR_ADC_PIN");
+    snprintf(alarm_text, sizeof(alarm_text), "Invalid ADC pin mapping for required analog sensors");
+    publish_runtime_status_topics();
+    return;
+  }
+
   if (SENSOR_TEST_MODE) {
     alarm_active = false;
     emergency_active = false;
@@ -1201,12 +1249,45 @@ void read_sensors() {
     sensors.water_level = has_water_level_runtime_data() ? BENCH_DEFAULT_WATER_LEVEL : 0.0f;
     sensors.aerator_current = has_aerator_current_runtime_data() ? BENCH_DEFAULT_AERATOR_CURRENT : 0.0f;
     sensors.pump_current = has_pump_current_runtime_data() ? BENCH_DEFAULT_PUMP_CURRENT : 0.0f;
-    sensors.ph_raw = (int)((BENCH_DEFAULT_PH / 14.0f) * 4095.0f);
-    sensors.do_raw = (int)((BENCH_DEFAULT_DO / DO_MAX_VALUE) * 4095.0f);
-    sensors.turbidity_raw = (int)BENCH_DEFAULT_TURBIDITY;
-    sensors.water_level_raw = has_water_level_runtime_data() ? WATER_LEVEL_ADC_FULL : -1;
-    sensors.aerator_current_raw = has_aerator_current_runtime_data() ? 0 : -1;
-    sensors.pump_current_raw = has_pump_current_runtime_data() ? 0 : -1;
+    float bench_ph_voltage = PH_NEUTRAL_VOLTAGE - ((BENCH_DEFAULT_PH - 7.0f) * PH_SLOPE_VOLT_PER_PH);
+    float do_span = DO_FULL_SCALE_VOLTAGE - DO_ZERO_VOLTAGE;
+    float bench_do_ratio = DO_FULL_SCALE_MG_L > 0.0f ? (BENCH_DEFAULT_DO / DO_FULL_SCALE_MG_L) : 0.0f;
+    float bench_do_voltage = DO_ZERO_VOLTAGE + (bench_do_ratio * do_span);
+    sensors.ph_raw = voltage_to_adc(bench_ph_voltage);
+    sensors.do_raw = voltage_to_adc(bench_do_voltage);
+    if (TURBIDITY_CALIBRATED && TURBIDITY_MAX_NTU > 0.0f) {
+      float bench_turbidity_voltage =
+        TURBIDITY_ZERO_NTU_VOLTAGE -
+        ((BENCH_DEFAULT_TURBIDITY / TURBIDITY_MAX_NTU) * (TURBIDITY_ZERO_NTU_VOLTAGE - TURBIDITY_MAX_NTU_VOLTAGE));
+      sensors.turbidity_raw = voltage_to_adc(bench_turbidity_voltage);
+    } else {
+      sensors.turbidity_raw = (int)BENCH_DEFAULT_TURBIDITY;
+    }
+    if (has_water_level_runtime_data()) {
+      float water_level_span = WATER_LEVEL_PERCENT_FULL - WATER_LEVEL_PERCENT_EMPTY;
+      float water_level_ratio = water_level_span != 0.0f
+                                  ? (BENCH_DEFAULT_WATER_LEVEL - WATER_LEVEL_PERCENT_EMPTY) / water_level_span
+                                  : 0.0f;
+      water_level_ratio = clamp_float(water_level_ratio, 0.0f, 1.0f);
+      sensors.water_level_raw =
+        WATER_LEVEL_ADC_EMPTY + (int)(water_level_ratio * (float)(WATER_LEVEL_ADC_FULL - WATER_LEVEL_ADC_EMPTY));
+    } else {
+      sensors.water_level_raw = -1;
+    }
+
+    if (has_aerator_current_runtime_data() && AERATOR_CURRENT_AMP_PER_VOLT > 0.0f) {
+      float aerator_current_voltage = AERATOR_CURRENT_ZERO_VOLTAGE + (BENCH_DEFAULT_AERATOR_CURRENT / AERATOR_CURRENT_AMP_PER_VOLT);
+      sensors.aerator_current_raw = voltage_to_adc(aerator_current_voltage);
+    } else {
+      sensors.aerator_current_raw = -1;
+    }
+
+    if (has_pump_current_runtime_data() && PUMP_CURRENT_AMP_PER_VOLT > 0.0f) {
+      float pump_current_voltage = PUMP_CURRENT_ZERO_VOLTAGE + (BENCH_DEFAULT_PUMP_CURRENT / PUMP_CURRENT_AMP_PER_VOLT);
+      sensors.pump_current_raw = voltage_to_adc(pump_current_voltage);
+    } else {
+      sensors.pump_current_raw = -1;
+    }
     sensors.ph_voltage = adc_to_voltage(sensors.ph_raw);
     sensors.do_voltage = adc_to_voltage(sensors.do_raw);
     sensors.turbidity_voltage = adc_to_voltage(sensors.turbidity_raw);
@@ -1227,17 +1308,29 @@ void read_sensors() {
       sensors.light = NAN;
     }
 
-    sensors.ph_raw = read_analog_average(PH_PIN, ANALOG_READ_SAMPLES);
-    sensors.do_raw = read_analog_average(DO_PIN, ANALOG_READ_SAMPLES);
-    sensors.turbidity_raw = read_analog_average(TURBIDITY_PIN, ANALOG_READ_SAMPLES);
-    sensors.ph_voltage = adc_to_voltage(sensors.ph_raw);
-    sensors.do_voltage = adc_to_voltage(sensors.do_raw);
-    sensors.turbidity_voltage = adc_to_voltage(sensors.turbidity_raw);
+    if (required_analog_pins_valid) {
+      sensors.ph_raw = read_analog_average(PH_PIN, ANALOG_READ_SAMPLES);
+      sensors.do_raw = read_analog_average(DO_PIN, ANALOG_READ_SAMPLES);
+      sensors.turbidity_raw = read_analog_average(TURBIDITY_PIN, ANALOG_READ_SAMPLES);
+      sensors.ph_voltage = adc_to_voltage(sensors.ph_raw);
+      sensors.do_voltage = adc_to_voltage(sensors.do_raw);
+      sensors.turbidity_voltage = adc_to_voltage(sensors.turbidity_raw);
 
-    sensors.ph = read_ph_from_adc(sensors.ph_raw);
-    sensors.do_value = read_do_from_adc(sensors.do_raw);
-    sensors.turbidity = read_turbidity_from_adc(sensors.turbidity_raw);
-    sensors.co2 = CO2_SENSOR_ENABLED ? (adc_to_voltage(read_analog_average(CO2_PIN, ANALOG_READ_SAMPLES)) / ADC_REFERENCE_VOLTAGE) * 10.0f : NAN;
+      sensors.ph = read_ph_from_adc(sensors.ph_raw);
+      sensors.do_value = read_do_from_adc(sensors.do_raw);
+      sensors.turbidity = read_turbidity_from_adc(sensors.turbidity_raw);
+    } else {
+      sensors.ph_raw = -1;
+      sensors.do_raw = -1;
+      sensors.turbidity_raw = -1;
+      sensors.ph_voltage = NAN;
+      sensors.do_voltage = NAN;
+      sensors.turbidity_voltage = NAN;
+      sensors.ph = NAN;
+      sensors.do_value = NAN;
+      sensors.turbidity = NAN;
+    }
+    sensors.co2 = has_co2_runtime_data() ? read_co2_from_adc(read_analog_average(CO2_PIN, ANALOG_READ_SAMPLES)) : NAN;
 
     sensors.water_level_raw = -1;
     sensors.aerator_current_raw = -1;
@@ -1285,6 +1378,11 @@ void read_sensors() {
       sensors.last_ph = sensors.ph;
       sensors.last_ph_timestamp = now;
       sensors.has_last_ph = true;
+    } else {
+      sensors.last_ph = 0.0f;
+      sensors.last_ph_timestamp = 0;
+      sensors.has_last_ph = false;
+      sensors.ph_trend = 0.0f;
     }
   }
 
