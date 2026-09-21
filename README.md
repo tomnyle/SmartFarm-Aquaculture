@@ -118,6 +118,7 @@ Each species has predefined parameter ranges:
 See `/docs` folder for:
 - `architecture.md` - System design
 - `sensors.md` - Sensor specifications & calibration
+- `sensor_test_vi.md` - Quy trình test cảm biến an toàn (BENCH/SENSOR_TEST/production)
 - `wiring.md` - Hardware wiring diagram
 - `mqtt.md` - MQTT protocol details
 

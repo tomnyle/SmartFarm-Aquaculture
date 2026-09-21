@@ -74,6 +74,7 @@
 #define MQTT_TOPIC_SAFETY_ACTIVE "smartfarm/aquaculture/safety/active"
 #define MQTT_TOPIC_EMERGENCY_ACTIVE "smartfarm/aquaculture/emergency/active"
 #define MQTT_TOPIC_CONTROLLER_STATUS "smartfarm/aquaculture/controller/status"
+#define MQTT_TOPIC_TEST_MODE "smartfarm/aquaculture/controller/test_mode"
 
 // Availability Topics
 #define MQTT_TOPIC_AVAILABILITY "smartfarm/aquaculture/availability"
@@ -123,8 +124,15 @@
 #define AERATOR_2_HARDWARE_AVAILABLE false
 #define ALARM_OUTPUT_HARDWARE_AVAILABLE false
 
-// ==================== BENCH MODE ====================
+// ==================== TEST MODES ====================
 #define BENCH_TEST_MODE true
+#define SENSOR_TEST_MODE false
+
+#if BENCH_TEST_MODE && SENSOR_TEST_MODE
+#error "BENCH_TEST_MODE and SENSOR_TEST_MODE cannot both be true"
+#endif
+
+// ==================== BENCH MODE ====================
 #define BENCH_DEFAULT_WATER_TEMP 27.0f
 #define BENCH_DEFAULT_PH 7.20f
 #define BENCH_DEFAULT_PH_TREND 0.00f
@@ -137,6 +145,43 @@
 #define BENCH_DEFAULT_WATER_LEVEL 70.0f
 #define BENCH_DEFAULT_AERATOR_CURRENT 0.00f
 #define BENCH_DEFAULT_PUMP_CURRENT 0.00f
+
+// ==================== ADC + ANALOG SENSOR CALIBRATION ====================
+#define ANALOG_READ_SAMPLES 16
+#define ANALOG_SAMPLE_DELAY_US 250
+#define ADC_REFERENCE_VOLTAGE 3.30f
+
+// pH mapping: pH = 7 + (PH_NEUTRAL_VOLTAGE - voltage) / PH_SLOPE_VOLT_PER_PH
+#define PH_NEUTRAL_VOLTAGE 2.50f
+#define PH_SLOPE_VOLT_PER_PH 0.18f
+#define PH_MIN_VALUE 0.0f
+#define PH_MAX_VALUE 14.0f
+
+// DO mapping: linear interpolation between 0mg/L and full-scale mg/L
+#define DO_ZERO_VOLTAGE 0.40f
+#define DO_FULL_SCALE_VOLTAGE 2.20f
+#define DO_FULL_SCALE_MG_L 12.0f
+#define DO_MAX_VALUE 20.0f
+
+// Turbidity: only publish calibrated NTU when this flag is true
+#define TURBIDITY_CALIBRATED false
+#define TURBIDITY_ZERO_NTU_VOLTAGE 2.50f
+#define TURBIDITY_MAX_NTU_VOLTAGE 0.50f
+#define TURBIDITY_MAX_NTU 3000.0f
+
+// Optional analog sensors (enabled only when *_SENSOR_ENABLED=true and pin mapped to ADC1)
+#define WATER_LEVEL_ADC_EMPTY 800
+#define WATER_LEVEL_ADC_FULL 3200
+#define WATER_LEVEL_PERCENT_EMPTY 0.0f
+#define WATER_LEVEL_PERCENT_FULL 100.0f
+
+#define AERATOR_CURRENT_ZERO_VOLTAGE 0.50f
+#define AERATOR_CURRENT_AMP_PER_VOLT 10.0f
+#define AERATOR_CURRENT_MAX_VALUE 100.0f
+
+#define PUMP_CURRENT_ZERO_VOLTAGE 0.50f
+#define PUMP_CURRENT_AMP_PER_VOLT 10.0f
+#define PUMP_CURRENT_MAX_VALUE 100.0f
 
 // ==================== CONTROL THRESHOLDS ====================
 // Temperature (°C)
