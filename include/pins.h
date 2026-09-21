@@ -19,6 +19,11 @@
 #define I2C_SDA 21          // I2C Data
 #define I2C_SCL 22          // I2C Clock
 
+// Optional ADC1 input pins (set -1 when hardware is not connected)
+#define WATER_LEVEL_PIN -1      // Must be ADC1 pin if enabled
+#define AERATOR_CURRENT_PIN -1  // Must be ADC1 pin if enabled
+#define PUMP_CURRENT_PIN -1     // Must be ADC1 pin if enabled
+
 // ==================== OUTPUT PINS ====================
 // Relay Pins
 #define PUMP_PIN 13         // Main pump relay
