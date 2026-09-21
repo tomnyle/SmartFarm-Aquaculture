@@ -61,6 +61,7 @@
 #define MQTT_TOPIC_OPERATION_PROFILE_SELECTED "smartfarm/aquaculture/config/operation_profile/selected"
 #define MQTT_TOPIC_OPERATION_PROFILE_ACTUAL "smartfarm/aquaculture/config/operation_profile/actual"
 #define MQTT_TOPIC_LIVESTOCK_PRESENT_STATE "smartfarm/aquaculture/config/livestock_present/state"
+#define MQTT_TOPIC_RELAY_TEST_REQUEST_STATE "smartfarm/aquaculture/config/relay_test/requested"
 #define MQTT_TOPIC_RELAY_TEST_STATE "smartfarm/aquaculture/config/relay_test/state"
 
 // Status Topic

@@ -74,8 +74,10 @@ char current_mode[16] = "";
 char current_species[32] = "Rô Phi";
 OperationProfileId requested_profile = PROFILE_SENSOR_TEST;
 OperationProfileId actual_profile = PROFILE_SENSOR_TEST;
+RelayTestStatusId requested_relay_test_status = RELAY_TEST_NOT_STARTED;
 RelayTestStatusId relay_test_status = RELAY_TEST_NOT_STARTED;
 bool livestock_present = false;
+bool external_outputs_locked = false;
 bool outputs_locked = true;
 bool can_no_load_test = false;
 bool can_production = false;
@@ -302,14 +304,15 @@ void publish_mqtt_discovery() {
   publish_discovery_switch("aquaculture_aerator", "Aquaculture Aerator", MQTT_TOPIC_AERATOR, MQTT_TOPIC_CONTROL_AERATOR, "mdi:air-purifier");
   publish_discovery_switch("aquaculture_circulation", "Aquaculture Circulation", MQTT_TOPIC_CIRCULATION, MQTT_TOPIC_CONTROL_CIRCULATION, "mdi:water-pump");
   publish_discovery_switch("aquaculture_feeder", "Aquaculture Feeder", MQTT_TOPIC_FEEDER, MQTT_TOPIC_CONTROL_FEEDER, "mdi:fish-food");
-  publish_discovery_switch("aquaculture_livestock_present", "Aquaculture Livestock Present", MQTT_TOPIC_LIVESTOCK_PRESENT_STATE, MQTT_TOPIC_CONTROL_LIVESTOCK_PRESENT, "mdi:fish");
+  publish_discovery_switch("aquaculture_livestock_present", "Aquaculture Livestock Confirmation", MQTT_TOPIC_LIVESTOCK_PRESENT_STATE, MQTT_TOPIC_CONTROL_LIVESTOCK_PRESENT, "mdi:fish");
 
   publish_discovery_select("aquaculture_mode", "Aquaculture Mode", MQTT_TOPIC_MODE_STATE, MQTT_TOPIC_CONTROL_MODE, "mdi:cog", mode_options, 4, "config");
   publish_discovery_select("aquaculture_species", "Aquaculture Species", MQTT_TOPIC_SPECIES_STATE, MQTT_TOPIC_CONFIG_SPECIES, "mdi:fishbowl", species_options, 8, "config");
   publish_discovery_select("aquaculture_operation_profile", "Aquaculture Operation Profile", MQTT_TOPIC_OPERATION_PROFILE_SELECTED, MQTT_TOPIC_CONTROL_OPERATION_PROFILE, "mdi:shield-check", profile_options, 3, "config");
-  publish_discovery_select("aquaculture_relay_test_status", "Aquaculture Relay Test Status", MQTT_TOPIC_RELAY_TEST_STATE, MQTT_TOPIC_CONTROL_RELAY_TEST, "mdi:toggle-switch", relay_test_options, 4, "config");
+  publish_discovery_select("aquaculture_relay_test_request", "Aquaculture Relay Test Request", MQTT_TOPIC_RELAY_TEST_REQUEST_STATE, MQTT_TOPIC_CONTROL_RELAY_TEST, "mdi:toggle-switch", relay_test_options, 4, "config");
 
   publish_discovery_sensor("aquaculture_active_profile", "Aquaculture Active Profile", MQTT_TOPIC_OPERATION_PROFILE_ACTUAL, "mdi:shield-account");
+  publish_discovery_sensor("aquaculture_relay_test_status", "Aquaculture Relay Test Status", MQTT_TOPIC_RELAY_TEST_STATE, "mdi:toggle-switch");
   publish_discovery_binary_sensor("aquaculture_can_no_load_test", "Aquaculture Can No-Load Test", MQTT_TOPIC_CAN_NO_LOAD_TEST, "mdi:beaker-check");
   publish_discovery_binary_sensor("aquaculture_can_production", "Aquaculture Can Production", MQTT_TOPIC_CAN_PRODUCTION, "mdi:fish");
   publish_discovery_binary_sensor("aquaculture_outputs_locked", "Aquaculture Outputs Locked", MQTT_TOPIC_OUTPUTS_LOCKED, "mdi:lock");
@@ -393,7 +396,23 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (strcmp(topic, MQTT_TOPIC_CONTROL_OPERATION_PROFILE) == 0) {
-    requested_profile = operationProfileFromString(message.c_str());
+    bool any_output_active = outputs.pump || outputs.aerator || outputs.circulation || outputs.feeder;
+    ProfileEligibilityInputs inputs = {
+        conditions.required_sensors_valid,
+        conditions.sensor_fault_active,
+        relay_test_status == RELAY_TEST_PASSED,
+        external_outputs_locked || any_output_active,
+        SENSOR_TEST_MODE,
+        conditions.any_active_alarm,
+        conditions.critical_condition_active,
+        livestock_present};
+    ProfileCommandUpdate command_update = applyOperationProfileCommand(message.c_str(), requested_profile, inputs);
+    if (!command_update.accepted) {
+      Serial.print("[WARN] Unsupported operation profile payload: ");
+      Serial.println(message);
+      return;
+    }
+    requested_profile = command_update.requested_profile;
     Serial.print("[PROFILE] Requested profile -> ");
     Serial.println(operationProfileToString(requested_profile));
     update_operation_profile_state(true);
@@ -412,7 +431,14 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (strcmp(topic, MQTT_TOPIC_CONTROL_RELAY_TEST) == 0) {
-    relay_test_status = relayTestStatusFromString(message.c_str());
+    RelayTestCommandUpdate command_update = applyRelayTestCommand(message.c_str(), requested_relay_test_status);
+    if (!command_update.accepted) {
+      Serial.print("[WARN] Unsupported relay test payload: ");
+      Serial.println(message);
+      return;
+    }
+    requested_relay_test_status = command_update.requested_status;
+    relay_test_status = requested_relay_test_status;
     Serial.print("[PROFILE] relay_test_status -> ");
     Serial.println(relayTestStatusToString(relay_test_status));
     update_operation_profile_state(true);
@@ -508,11 +534,13 @@ void evaluate_conditions() {
 }
 
 void update_operation_profile_state(bool force_publish) {
+  bool any_output_active = outputs.pump || outputs.aerator || outputs.circulation || outputs.feeder;
+  external_outputs_locked = strcmp(current_mode, "SAFE") == 0 || (any_output_active && requested_profile != actual_profile);
   ProfileEligibilityInputs inputs = {
       conditions.required_sensors_valid,
       conditions.sensor_fault_active,
       relay_test_status == RELAY_TEST_PASSED,
-      SENSOR_TEST_MODE,
+      external_outputs_locked,
       SENSOR_TEST_MODE,
       conditions.any_active_alarm,
       conditions.critical_condition_active,
@@ -525,7 +553,7 @@ void update_operation_profile_state(bool force_publish) {
   requested_blockers = evaluation.requested_blockers;
   production_blockers = evaluation.production_blockers;
   display_blockers = requested_profile == PROFILE_SENSOR_TEST ? production_blockers : requested_blockers;
-  outputs_locked = SENSOR_TEST_MODE || actual_profile == PROFILE_SENSOR_TEST;
+  outputs_locked = external_outputs_locked || SENSOR_TEST_MODE || actual_profile == PROFILE_SENSOR_TEST;
 
   buildReasonList(display_blockers, false, block_codes, sizeof(block_codes));
   buildReasonList(display_blockers, true, block_summary, sizeof(block_summary));
@@ -735,6 +763,7 @@ void publish_profile_state() {
   mqtt_client.publish(MQTT_TOPIC_OPERATION_PROFILE_SELECTED, operationProfileToString(requested_profile), true);
   mqtt_client.publish(MQTT_TOPIC_OPERATION_PROFILE_ACTUAL, operationProfileToString(actual_profile), true);
   mqtt_client.publish(MQTT_TOPIC_LIVESTOCK_PRESENT_STATE, livestock_present ? "ON" : "OFF", true);
+  mqtt_client.publish(MQTT_TOPIC_RELAY_TEST_REQUEST_STATE, relayTestStatusToString(requested_relay_test_status), true);
   mqtt_client.publish(MQTT_TOPIC_RELAY_TEST_STATE, relayTestStatusToString(relay_test_status), true);
   mqtt_client.publish(MQTT_TOPIC_CAN_NO_LOAD_TEST, can_no_load_test ? "ON" : "OFF", true);
   mqtt_client.publish(MQTT_TOPIC_CAN_PRODUCTION, can_production ? "ON" : "OFF", true);

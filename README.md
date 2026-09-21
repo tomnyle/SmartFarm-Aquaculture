@@ -110,12 +110,18 @@ The firmware now keeps a second safety layer for commissioning and production se
     - no required sensor fault is active
     - `SENSOR_TEST_MODE=false`
     - no critical condition is active
-    - outputs are not locked
+    - no external output lock is active (currently `SAFE` mode)
     - relay test status is `PASSED`
 - `PRODUCTION`
   - Real livestock production.
   - Requires everything from `NO_LIVESTOCK_TEST`, plus:
     - retained `livestock_present=ON`
+    - no active alarm is present
+
+Runtime note:
+
+- `SENSOR_TEST_MODE` is its own blocker and always forces the active profile back to `SENSOR_TEST`.
+- The active `SENSOR_TEST` profile still locks outputs at runtime, but that profile lock is not reused as an eligibility blocker when evaluating whether the next requested profile can be accepted.
 
 Requested profile changes from Home Assistant are never trusted blindly:
 
@@ -159,7 +165,7 @@ Core retained topics:
 - `smartfarm/aquaculture/config/species/set|state`
 - `smartfarm/aquaculture/config/operation_profile/set|selected|actual`
 - `smartfarm/aquaculture/config/livestock_present/set|state`
-- `smartfarm/aquaculture/config/relay_test/set|state`
+- `smartfarm/aquaculture/config/relay_test/set|requested|state`
 - `smartfarm/aquaculture/eligibility/can_no_load_test`
 - `smartfarm/aquaculture/eligibility/can_production`
 - `smartfarm/aquaculture/eligibility/outputs_locked`
@@ -178,12 +184,14 @@ Home Assistant MQTT discovery also creates entities for:
 - operation profile selector
 - active profile sensor
 - livestock present switch
-- relay test selector
+- relay test request selector and status sensor
 - can no-load test
 - can production
 - outputs locked
 - production block reason / active reminder
 - per-blocker reminder indicators
+
+Binary-sensor style eligibility and blocker topics publish retained `ON` / `OFF` payloads. Select entities publish fixed option strings such as `SENSOR_TEST`, `NO_LIVESTOCK_TEST`, `PRODUCTION`, `NOT_STARTED`, `IN_PROGRESS`, `PASSED`, and `FAILED`.
 
 ## Home Assistant Automation Example
 

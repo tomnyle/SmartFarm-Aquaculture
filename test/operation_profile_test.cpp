@@ -64,6 +64,15 @@ int main() {
 
   {
     ProfileEligibilityInputs inputs = baseInputs();
+    inputs.critical_condition_active = true;
+    ProfileEvaluation evaluation = evaluateProfileRequest(PROFILE_NO_LIVESTOCK_TEST, inputs);
+    assert(!evaluation.can_no_load_test);
+    assert((evaluation.no_load_blockers & BLOCK_CRITICAL_CONDITION_ACTIVE) != 0);
+    assert(evaluation.actual_profile == PROFILE_SENSOR_TEST);
+  }
+
+  {
+    ProfileEligibilityInputs inputs = baseInputs();
     inputs.livestock_present_confirmed = true;
     ProfileEvaluation evaluation = evaluateProfileRequest(PROFILE_PRODUCTION, inputs);
     assert(evaluation.can_production);
@@ -75,6 +84,58 @@ int main() {
     char buffer[256];
     buildReasonList(BLOCK_REQUIRED_SENSOR_INVALID | BLOCK_LIVESTOCK_NOT_CONFIRMED, false, buffer, sizeof(buffer));
     assert(std::strcmp(buffer, "required_sensor_invalid,livestock_not_confirmed") == 0);
+  }
+
+  {
+    assert(isOperationProfileValue("SENSOR_TEST"));
+    assert(isOperationProfileValue("NO_LIVESTOCK_TEST"));
+    assert(isOperationProfileValue("PRODUCTION"));
+    assert(!isOperationProfileValue("BROKEN"));
+    OperationProfileId parsed_profile = PROFILE_SENSOR_TEST;
+    assert(tryParseOperationProfile("PRODUCTION", parsed_profile));
+    assert(parsed_profile == PROFILE_PRODUCTION);
+    assert(!tryParseOperationProfile("BROKEN", parsed_profile));
+    assert(parsed_profile == PROFILE_PRODUCTION);
+    assert(operationProfileFromString("PRODUCTION") == PROFILE_PRODUCTION);
+    assert(operationProfileFromString("UNKNOWN") == PROFILE_SENSOR_TEST);
+  }
+
+  {
+    assert(isRelayTestStatusValue("NOT_STARTED"));
+    assert(isRelayTestStatusValue("IN_PROGRESS"));
+    assert(isRelayTestStatusValue("PASSED"));
+    assert(isRelayTestStatusValue("FAILED"));
+    assert(!isRelayTestStatusValue("BROKEN"));
+    RelayTestStatusId parsed_status = RELAY_TEST_NOT_STARTED;
+    assert(tryParseRelayTestStatus("PASSED", parsed_status));
+    assert(parsed_status == RELAY_TEST_PASSED);
+    assert(!tryParseRelayTestStatus("BROKEN", parsed_status));
+    assert(parsed_status == RELAY_TEST_PASSED);
+    assert(relayTestStatusFromString("PASSED") == RELAY_TEST_PASSED);
+    assert(relayTestStatusFromString("UNKNOWN") == RELAY_TEST_NOT_STARTED);
+  }
+
+  {
+    ProfileEligibilityInputs inputs = baseInputs();
+    inputs.livestock_present_confirmed = true;
+    OperationProfileId requested_profile = PROFILE_SENSOR_TEST;
+    ProfileCommandUpdate profile_update = applyOperationProfileCommand("INVALID", requested_profile, inputs);
+    assert(!profile_update.accepted);
+    assert(profile_update.requested_profile == requested_profile);
+    assert(profile_update.evaluation.actual_profile == PROFILE_SENSOR_TEST);
+
+    profile_update = applyOperationProfileCommand("PRODUCTION", requested_profile, inputs);
+    assert(profile_update.accepted);
+    assert(profile_update.requested_profile == PROFILE_PRODUCTION);
+    assert(profile_update.evaluation.actual_profile == PROFILE_PRODUCTION);
+
+    RelayTestCommandUpdate relay_update = applyRelayTestCommand("INVALID", RELAY_TEST_NOT_STARTED);
+    assert(!relay_update.accepted);
+    assert(relay_update.requested_status == RELAY_TEST_NOT_STARTED);
+
+    relay_update = applyRelayTestCommand("PASSED", RELAY_TEST_NOT_STARTED);
+    assert(relay_update.accepted);
+    assert(relay_update.requested_status == RELAY_TEST_PASSED);
   }
 
   return 0;

@@ -54,6 +54,17 @@ struct ProfileEvaluation {
   uint16_t requested_blockers;
 };
 
+struct ProfileCommandUpdate {
+  bool accepted;
+  OperationProfileId requested_profile;
+  ProfileEvaluation evaluation;
+};
+
+struct RelayTestCommandUpdate {
+  bool accepted;
+  RelayTestStatusId requested_status;
+};
+
 inline const char* operationProfileToString(OperationProfileId profile) {
   switch (profile) {
     case PROFILE_NO_LIVESTOCK_TEST:
@@ -74,6 +85,21 @@ inline OperationProfileId operationProfileFromString(const char* value) {
     return PROFILE_PRODUCTION;
   }
   return PROFILE_SENSOR_TEST;
+}
+
+inline bool isOperationProfileValue(const char* value) {
+  return strcmp(value, "SENSOR_TEST") == 0 ||
+         strcmp(value, "NO_LIVESTOCK_TEST") == 0 ||
+         strcmp(value, "PRODUCTION") == 0;
+}
+
+inline bool tryParseOperationProfile(const char* value, OperationProfileId& profile) {
+  if (!isOperationProfileValue(value)) {
+    return false;
+  }
+
+  profile = operationProfileFromString(value);
+  return true;
 }
 
 inline const char* relayTestStatusToString(RelayTestStatusId status) {
@@ -101,6 +127,22 @@ inline RelayTestStatusId relayTestStatusFromString(const char* value) {
     return RELAY_TEST_FAILED;
   }
   return RELAY_TEST_NOT_STARTED;
+}
+
+inline bool isRelayTestStatusValue(const char* value) {
+  return strcmp(value, "NOT_STARTED") == 0 ||
+         strcmp(value, "IN_PROGRESS") == 0 ||
+         strcmp(value, "PASSED") == 0 ||
+         strcmp(value, "FAILED") == 0;
+}
+
+inline bool tryParseRelayTestStatus(const char* value, RelayTestStatusId& status) {
+  if (!isRelayTestStatusValue(value)) {
+    return false;
+  }
+
+  status = relayTestStatusFromString(value);
+  return true;
 }
 
 inline uint16_t computeNoLoadBlockers(const ProfileEligibilityInputs& inputs) {
@@ -175,6 +217,34 @@ inline ProfileEvaluation evaluateProfileRequest(OperationProfileId requested_pro
   }
 
   return result;
+}
+
+inline ProfileCommandUpdate applyOperationProfileCommand(const char* payload,
+                                                         OperationProfileId current_requested_profile,
+                                                         const ProfileEligibilityInputs& inputs) {
+  ProfileCommandUpdate update = {};
+  update.requested_profile = current_requested_profile;
+
+  OperationProfileId parsed_profile;
+  if (tryParseOperationProfile(payload, parsed_profile)) {
+    update.accepted = true;
+    update.requested_profile = parsed_profile;
+  }
+
+  update.evaluation = evaluateProfileRequest(update.requested_profile, inputs);
+  return update;
+}
+
+inline RelayTestCommandUpdate applyRelayTestCommand(const char* payload,
+                                                    RelayTestStatusId current_requested_status) {
+  RelayTestCommandUpdate update = {};
+  update.requested_status = current_requested_status;
+  RelayTestStatusId parsed_status;
+  if (tryParseRelayTestStatus(payload, parsed_status)) {
+    update.accepted = true;
+    update.requested_status = parsed_status;
+  }
+  return update;
 }
 
 inline const char* blockReasonCode(uint16_t reason_bit) {
