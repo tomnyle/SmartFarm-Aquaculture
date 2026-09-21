@@ -82,7 +82,6 @@ char production_phase[16] = "INIT";
 char process_summary[96] = "init";
 const char* relay_test_status = "NOT_STARTED";
 bool production_ready = false;
-bool relay_test_passed = false;
 bool monitor_state_initialized = false;
 bool last_production_ready = false;
 ConditionState last_conditions = {};
@@ -101,6 +100,7 @@ void publish_monitoring_state();
 void set_output(const char* name, bool state);
 void update_monitoring_state(bool log_changes);
 void log_monitoring_changes();
+void snapshot_monitoring_state();
 
 // ==================== SETUP ====================
 void setup() {
@@ -860,7 +860,8 @@ void read_sensors() {
   waterTemp.requestTemperatures();
   float water_temp_reading = waterTemp.getTempCByIndex(0);
   sensors.water_temp = water_temp_reading;
-  sensor_validity.water_temp = !isnan(water_temp_reading) && water_temp_reading != DEVICE_DISCONNECTED_C && water_temp_reading > -20.0f && water_temp_reading < 60.0f;
+  bool water_temp_disconnected = fabsf(water_temp_reading - DEVICE_DISCONNECTED_C) < 0.1f;
+  sensor_validity.water_temp = !isnan(water_temp_reading) && !water_temp_disconnected && water_temp_reading > -20.0f && water_temp_reading < 60.0f;
   if (!sensor_validity.water_temp) sensors.water_temp = 0;
 
   sensors.air_temp = dht.readTemperature();
@@ -875,18 +876,22 @@ void read_sensors() {
     sensors.light = 0;
   }
 
-  sensors.ph = (analogRead(PH_PIN) / 4095.0) * 14.0;
-  sensors.turbidity = analogRead(TURBIDITY_PIN);
-  sensors.do_value = (analogRead(DO_PIN) / 4095.0) * 20.0;
+  int ph_raw = analogRead(PH_PIN);
+  int turbidity_raw = analogRead(TURBIDITY_PIN);
+  int do_raw = analogRead(DO_PIN);
+
+  sensors.ph = (ph_raw / 4095.0) * 14.0;
+  sensors.turbidity = turbidity_raw;
+  sensors.do_value = (do_raw / 4095.0) * 20.0;
   if (CO2_SENSOR_ENABLED) {
     sensors.co2 = (analogRead(CO2_PIN) / 4095.0) * 10.0;
   } else {
     sensors.co2 = 0;
   }
 
-  sensor_validity.ph = !isnan(sensors.ph) && sensors.ph >= 0.0f && sensors.ph <= 14.0f;
-  sensor_validity.do_value = !isnan(sensors.do_value) && sensors.do_value >= 0.0f && sensors.do_value <= 20.0f;
-  sensor_validity.turbidity = !isnan(sensors.turbidity) && sensors.turbidity >= 0.0f && sensors.turbidity <= 4095.0f;
+  sensor_validity.ph = ph_raw > 10 && ph_raw < 4085 && !isnan(sensors.ph) && sensors.ph >= 0.0f && sensors.ph <= 14.0f;
+  sensor_validity.do_value = do_raw > 10 && do_raw < 4085 && !isnan(sensors.do_value) && sensors.do_value >= 0.0f && sensors.do_value <= 20.0f;
+  sensor_validity.turbidity = turbidity_raw > 10 && turbidity_raw < 4085 && !isnan(sensors.turbidity) && sensors.turbidity >= 0.0f && sensors.turbidity <= 4095.0f;
   sensor_validity.co2 = !CO2_SENSOR_ENABLED || (!isnan(sensors.co2) && sensors.co2 >= 0.0f && sensors.co2 <= 100.0f);
   sensor_validity.required_ok = sensor_validity.water_temp && sensor_validity.ph && sensor_validity.do_value && sensor_validity.turbidity;
 
@@ -1020,13 +1025,10 @@ void set_output(const char* name, bool state) {
     digitalWrite(PUMP_PIN, state ? HIGH : LOW);
   } else if (strcmp(name, "aerator") == 0) {
     outputs.aerator = state;
-    digitalWrite(AERATOR_PIN, state ? HIGH : LOW);
   } else if (strcmp(name, "circulation") == 0) {
     outputs.circulation = state;
-    digitalWrite(CIRCULATION_PIN, state ? HIGH : LOW);
   } else if (strcmp(name, "feeder") == 0) {
     outputs.feeder = state;
-    digitalWrite(FEEDER_PIN, state ? HIGH : LOW);
   }
 
   Serial.print("[OUTPUT] ");
@@ -1052,6 +1054,26 @@ void publish_sensor_data() {
 
 void update_monitoring_state(bool log_changes) {
   const SpeciesRule* rule = getSpeciesRule(current_species);
+  if (rule == nullptr) {
+    conditions.water_temp_high = false;
+    conditions.water_temp_low = false;
+    conditions.ph_low = false;
+    conditions.ph_high = false;
+    conditions.do_low = false;
+    conditions.do_critical = false;
+    conditions.co2_high = false;
+    conditions.turbidity_high = false;
+    conditions.sensor_fault = true;
+    conditions.outputs_locked = SENSOR_TEST_MODE;
+    conditions.any_active = true;
+    strcpy(production_phase, "NOT_READY");
+    production_ready = false;
+    snprintf(process_summary, sizeof(process_summary), "species_profile_missing");
+    if (log_changes) {
+      log_monitoring_changes();
+    }
+    return;
+  }
 
   conditions.water_temp_high = sensor_validity.water_temp && sensors.water_temp > rule->temp_max;
   conditions.water_temp_low = sensor_validity.water_temp && sensors.water_temp < rule->temp_min;
@@ -1061,7 +1083,7 @@ void update_monitoring_state(bool log_changes) {
   conditions.do_critical = sensor_validity.do_value && sensors.do_value <= rule->do_critical;
   conditions.co2_high = CO2_SENSOR_ENABLED && sensor_validity.co2 && sensors.co2 > rule->co2_max;
   conditions.turbidity_high = sensor_validity.turbidity && sensors.turbidity > rule->turbidity_max;
-  conditions.sensor_fault = !sensor_validity.required_ok;
+  conditions.sensor_fault = !sensor_validity.required_ok || (CO2_SENSOR_ENABLED && !sensor_validity.co2);
   conditions.outputs_locked = SENSOR_TEST_MODE;
   conditions.any_active =
       conditions.water_temp_high ||
@@ -1074,30 +1096,38 @@ void update_monitoring_state(bool log_changes) {
       conditions.turbidity_high ||
       conditions.sensor_fault;
 
+  bool blocking_required_alarm =
+      conditions.water_temp_high ||
+      conditions.water_temp_low ||
+      conditions.ph_low ||
+      conditions.ph_high ||
+      conditions.do_low ||
+      conditions.do_critical ||
+      conditions.turbidity_high ||
+      !sensor_validity.required_ok;
+
   if (SENSOR_TEST_MODE) {
     strcpy(production_phase, "SENSOR_TEST");
     production_ready = false;
-    relay_test_status = "NOT_STARTED";
     snprintf(process_summary, sizeof(process_summary), "required_valid=%s; relay_test=%s; outputs_locked=ON",
              sensor_validity.required_ok ? "YES" : "NO", relay_test_status);
   } else if (!sensor_validity.required_ok) {
     strcpy(production_phase, "VALIDATION");
     production_ready = false;
     snprintf(process_summary, sizeof(process_summary), "validation_failed: required sensor invalid");
-  } else if (!relay_test_passed) {
-    strcpy(production_phase, "RELAY_TEST");
-    production_ready = false;
-    relay_test_status = "NOT_STARTED";
-    snprintf(process_summary, sizeof(process_summary), "validation_ok; relay_test=%s", relay_test_status);
   } else {
-    strcpy(production_phase, "READY");
-    production_ready = true;
-    relay_test_status = "PASSED";
-    snprintf(process_summary, sizeof(process_summary), "validation_ok; relay_test=PASSED");
+    production_ready = !blocking_required_alarm;
+    if (production_ready) {
+      strcpy(production_phase, "READY");
+      snprintf(process_summary, sizeof(process_summary), "validation_ok; relay_test=%s", relay_test_status);
+    } else {
+      strcpy(production_phase, "NOT_READY");
+      snprintf(process_summary, sizeof(process_summary), "validation_ok; active_condition_present");
+    }
   }
 
   if (strcmp(current_mode, "SAFE") == 0 && !production_ready) {
-    strcpy(production_phase, "NOT_READY");
+    strncat(process_summary, "; mode=SAFE", sizeof(process_summary) - strlen(process_summary) - 1);
   }
 
   if (log_changes) {
@@ -1108,9 +1138,7 @@ void update_monitoring_state(bool log_changes) {
 void log_monitoring_changes() {
   if (!monitor_state_initialized) {
     monitor_state_initialized = true;
-    last_conditions = conditions;
-    strcpy(last_phase, production_phase);
-    last_production_ready = production_ready;
+    snapshot_monitoring_state();
     Serial.print("[PROCESS] Phase initialized: ");
     Serial.println(production_phase);
     Serial.print("[PROCESS] Ready: ");
@@ -1138,6 +1166,38 @@ void log_monitoring_changes() {
     Serial.print("[CONDITION] any_active -> ");
     Serial.println(conditions.any_active ? "ON" : "OFF");
   }
+  if (last_conditions.water_temp_high != conditions.water_temp_high) {
+    Serial.print("[CONDITION] water_temp_high -> ");
+    Serial.println(conditions.water_temp_high ? "ON" : "OFF");
+  }
+  if (last_conditions.water_temp_low != conditions.water_temp_low) {
+    Serial.print("[CONDITION] water_temp_low -> ");
+    Serial.println(conditions.water_temp_low ? "ON" : "OFF");
+  }
+  if (last_conditions.ph_low != conditions.ph_low) {
+    Serial.print("[CONDITION] ph_low -> ");
+    Serial.println(conditions.ph_low ? "ON" : "OFF");
+  }
+  if (last_conditions.ph_high != conditions.ph_high) {
+    Serial.print("[CONDITION] ph_high -> ");
+    Serial.println(conditions.ph_high ? "ON" : "OFF");
+  }
+  if (last_conditions.do_low != conditions.do_low) {
+    Serial.print("[CONDITION] do_low -> ");
+    Serial.println(conditions.do_low ? "ON" : "OFF");
+  }
+  if (last_conditions.do_critical != conditions.do_critical) {
+    Serial.print("[CONDITION] do_critical -> ");
+    Serial.println(conditions.do_critical ? "ON" : "OFF");
+  }
+  if (last_conditions.co2_high != conditions.co2_high) {
+    Serial.print("[CONDITION] co2_high -> ");
+    Serial.println(conditions.co2_high ? "ON" : "OFF");
+  }
+  if (last_conditions.turbidity_high != conditions.turbidity_high) {
+    Serial.print("[CONDITION] turbidity_high -> ");
+    Serial.println(conditions.turbidity_high ? "ON" : "OFF");
+  }
   if (last_conditions.sensor_fault != conditions.sensor_fault) {
     Serial.print("[CONDITION] sensor_fault -> ");
     Serial.println(conditions.sensor_fault ? "ON" : "OFF");
@@ -1147,7 +1207,13 @@ void log_monitoring_changes() {
     Serial.println(conditions.outputs_locked ? "ON" : "OFF");
   }
 
+  snapshot_monitoring_state();
+}
+
+void snapshot_monitoring_state() {
   last_conditions = conditions;
+  strcpy(last_phase, production_phase);
+  last_production_ready = production_ready;
 }
 
 void publish_monitoring_state() {

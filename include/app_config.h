@@ -103,7 +103,8 @@
 
 // ==================== TEST/SAFETY MODE ====================
 #define BENCH_TEST_MODE false
-#define SENSOR_TEST_MODE true
+// Keep false for default production builds; set true during hardware bring-up.
+#define SENSOR_TEST_MODE false
 #if BENCH_TEST_MODE && SENSOR_TEST_MODE
 #error "BENCH_TEST_MODE and SENSOR_TEST_MODE cannot both be true"
 #endif
