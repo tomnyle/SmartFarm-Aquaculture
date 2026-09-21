@@ -111,6 +111,8 @@ Each species has predefined parameter ranges:
 - `smartfarm/aquaculture/output` - Output status (publish)
 - `smartfarm/aquaculture/control` - Control commands (subscribe)
 - `smartfarm/aquaculture/config` - Configuration (subscribe)
+- `smartfarm/aquaculture/condition/*` - Condition/alarm and output-lock states (publish, retained)
+- `smartfarm/aquaculture/process/*` - Production phase/readiness/summary states (publish, retained)
 - `smartfarm/aquaculture/status` - Device status (publish)
 
 ## Documentation

@@ -58,6 +58,25 @@
 #define MQTT_TOPIC_STATUS "smartfarm/aquaculture/status"
 #define MQTT_TOPIC_STATE "smartfarm/aquaculture/controller/state"
 
+// Production monitoring topics - conditions
+#define MQTT_TOPIC_COND_TEMP_HIGH "smartfarm/aquaculture/condition/water_temp_high"
+#define MQTT_TOPIC_COND_TEMP_LOW "smartfarm/aquaculture/condition/water_temp_low"
+#define MQTT_TOPIC_COND_PH_LOW "smartfarm/aquaculture/condition/ph_low"
+#define MQTT_TOPIC_COND_PH_HIGH "smartfarm/aquaculture/condition/ph_high"
+#define MQTT_TOPIC_COND_DO_LOW "smartfarm/aquaculture/condition/do_low"
+#define MQTT_TOPIC_COND_DO_CRITICAL "smartfarm/aquaculture/condition/do_critical"
+#define MQTT_TOPIC_COND_CO2_HIGH "smartfarm/aquaculture/condition/co2_high"
+#define MQTT_TOPIC_COND_TURBIDITY_HIGH "smartfarm/aquaculture/condition/turbidity_high"
+#define MQTT_TOPIC_COND_SENSOR_FAULT "smartfarm/aquaculture/condition/sensor_fault"
+#define MQTT_TOPIC_COND_ANY_ACTIVE "smartfarm/aquaculture/condition/any_active"
+#define MQTT_TOPIC_COND_OUTPUTS_LOCKED "smartfarm/aquaculture/condition/outputs_locked"
+#define MQTT_TOPIC_RELAY_TEST_STATUS "smartfarm/aquaculture/condition/relay_test_status"
+
+// Production monitoring topics - process
+#define MQTT_TOPIC_PRODUCTION_PHASE "smartfarm/aquaculture/process/phase"
+#define MQTT_TOPIC_PRODUCTION_READY "smartfarm/aquaculture/process/readiness"
+#define MQTT_TOPIC_PROCESS_SUMMARY "smartfarm/aquaculture/process/summary"
+
 // ==================== DEVICE CONFIGURATION ====================
 #define DEVICE_NAME "Aquaculture-Controller-001"
 #define DEVICE_LOCATION "Home Pond"
@@ -81,6 +100,17 @@
 
 // ==================== DEFAULT MODE ====================
 #define DEFAULT_MODE "AUTO"  // AUTO, MANUAL, SCHEDULE, SAFE
+
+// ==================== TEST/SAFETY MODE ====================
+#define BENCH_TEST_MODE false
+#define SENSOR_TEST_MODE true
+#if BENCH_TEST_MODE && SENSOR_TEST_MODE
+#error "BENCH_TEST_MODE and SENSOR_TEST_MODE cannot both be true"
+#endif
+
+// ==================== OPTIONAL SENSOR FLAGS ====================
+#define CO2_SENSOR_ENABLED true
+#define LIGHT_SENSOR_ENABLED true
 
 // ==================== CONTROL THRESHOLDS ====================
 // Temperature (°C)
